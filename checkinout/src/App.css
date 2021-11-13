@@ -1,0 +1,5 @@
+.Toastify__toast-body > div,
+.Toastify__toast-body {
+    text-align: center !important;
+    width: 100%;
+}
