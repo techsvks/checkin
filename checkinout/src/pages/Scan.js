@@ -209,6 +209,7 @@ function Scan(props) {
                     style={previewStyle}
                     onError={handleError}
                     onScan={handleScan}
+                    facingMode={"rear"}
                 />
             </div>
         </div>
