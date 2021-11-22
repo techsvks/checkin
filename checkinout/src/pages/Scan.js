@@ -4,11 +4,12 @@ import config from "../api/config";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Logo from "../images/Logo.png";
+import Reader from "../components/Reader";
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const doc = new GoogleSpreadsheet(
-    "1sj8Hk1nN-pushHCR-pKLoNJWHQMIOnL1SBTueItOLvQ"
+    "1FqeRNFlZZ7aJdtYRmjZ1kRb2-sarN9aoTMGyu4jhGKs"
 );
 
 function Scan(props) {
@@ -50,6 +51,8 @@ function Scan(props) {
                     );
                 } else {
                     const tS = doc.sheetsByTitle[todayDate];
+                    console.log("tS");
+                    console.log(tS);
                     setTodaySheet(tS);
 
                     toast.success(`✅ Ready to check in!`, {
@@ -69,9 +72,16 @@ function Scan(props) {
     );
 
     async function findStudentRow(ID) {
+        console.log("finding student row");
         const rows = await todaySheet.getRows();
+        console.log("rows");
+        console.log(rows);
+        console.log("ID");
+        console.log(ID);
+
         for (const row of rows) {
             if (row["ID"] == ID) {
+                console.log(row["ID"]);
                 return row.rowNumber;
             }
         }
@@ -87,13 +97,17 @@ function Scan(props) {
     }
 
     async function handleScan(data) {
-        if (data && data.text) {
+        console.log("reached function");
+        console.log("data");
+        console.log(data);
+        if (data) {
+            console.log("handling scanning");
             if (isWorking) return; // Check if still checking in someone
 
             setIsWorking(true);
 
             // Locate student in the spreadsheet today
-            let studentNumber = data.text;
+            let studentNumber = data;
             let studentRowNumber = await findStudentRow(studentNumber);
             const currentTime = getCurrentTime();
 
@@ -204,14 +218,32 @@ function Scan(props) {
                     height: "calc(100vh - 10rem)",
                 }}
             >
-                <QrReader
+                {/* <QrReader
                     delay={100}
                     style={previewStyle}
                     onError={handleError}
                     onScan={handleScan}
                     facingMode={"rear"}
-                />
+                /> */}
+
+                <Reader
+                    onScan={handleScan}
+                    myFunc={function () {
+                        console.log("helo");
+                    }}
+                ></Reader>
             </div>
+            <h1
+                style={{
+                    textAlign: "center",
+                    margin: 0,
+                    color: "lightgray",
+                    fontSize: "1rem",
+                    marginTop: "1rem",
+                }}
+            >
+                v 1.1
+            </h1>
         </div>
     );
 }
