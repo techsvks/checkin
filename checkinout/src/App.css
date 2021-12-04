@@ -3,3 +3,13 @@
     text-align: center !important;
     width: 100%;
 }
+/* 
+@media print {
+    display: block;
+} */
+
+@media screen {
+    .toPrint {
+        display: none;
+    }
+}

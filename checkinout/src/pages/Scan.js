@@ -5,12 +5,11 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Logo from "../images/Logo.png";
 import Reader from "../components/Reader";
+import { spreadsheetID } from "../api/spreadsheetID";
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
-const doc = new GoogleSpreadsheet(
-    "1FqeRNFlZZ7aJdtYRmjZ1kRb2-sarN9aoTMGyu4jhGKs"
-);
+const doc = new GoogleSpreadsheet(spreadsheetID);
 
 function Scan(props) {
     const [todaySheet, setTodaySheet] = useState({});
@@ -233,7 +232,7 @@ function Scan(props) {
                     }}
                 ></Reader>
             </div>
-            <h1
+            {/* <h1
                 style={{
                     textAlign: "center",
                     margin: 0,
@@ -243,7 +242,7 @@ function Scan(props) {
                 }}
             >
                 v 1.1
-            </h1>
+            </h1> */}
         </div>
     );
 }
