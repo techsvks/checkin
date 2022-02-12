@@ -21,6 +21,17 @@ function dateDiffInDays(a, b) {
     return Math.abs(Math.floor((utc2 - utc1) / _MS_PER_DAY));
 }
 
+const dateFormatOptions = [
+    { year: "numeric", month: "numeric", day: "numeric" },
+    { year: "2-digit", month: "numeric", day: "numeric" },
+    { year: "numeric", month: "2-digit", day: "numeric" },
+    { year: "2-digit", month: "2-digit", day: "numeric" },
+    { year: "numeric", month: "numeric", day: "2-digit" },
+    { year: "2-digit", month: "numeric", day: "2-digit" },
+    { year: "numeric", month: "2-digit", day: "2-digit" },
+    { year: "2-digit", month: "2-digit", day: "2-digit" },
+];
+
 function Print(props) {
     const [todaySheet, setTodaySheet] = useState({});
     const [todayRows, setTodayRows] = useState({});
@@ -35,20 +46,38 @@ function Print(props) {
         content: () => printRef.current,
     });
 
+    function findMostRecentSheetDate() {
+        let sheetDate = new Date();
+        let today = new Date();
+        let sheetDateString = null;
+        while (!sheetDateString) {
+            for (let option of dateFormatOptions) {
+                if (
+                    doc.sheetsByTitle[
+                        sheetDate.toLocaleDateString("en-US", option)
+                    ]
+                ) {
+                    sheetDateString = sheetDate.toLocaleDateString(
+                        "en-US",
+                        option
+                    );
+                    break;
+                }
+            }
+            sheetDate.setDate(sheetDate.getDate() - 1);
+            if (dateDiffInDays(today, sheetDate) > 400) break;
+        }
+        return sheetDateString;
+    }
+
     useEffect(function () {
         async function initializeWorker() {
             await doc.useServiceAccountAuth(config);
             await doc.loadInfo(); // loads document properties and worksheets
 
             // find today sheet
-            let sheetDate = new Date();
-            let today = new Date();
-            while (!doc.sheetsByTitle[sheetDate.toLocaleDateString()]) {
-                sheetDate.setDate(sheetDate.getDate() - 1);
-                if (dateDiffInDays(today, sheetDate) > 400) break;
-            }
 
-            sheetDate = sheetDate.toLocaleDateString();
+            let sheetDate = findMostRecentSheetDate();
 
             if (!doc.sheetsByTitle[sheetDate]) {
                 toast.error(`❗ Could not find data to use.`, {

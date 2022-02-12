@@ -40,7 +40,7 @@ function App() {
                         marginBottom: "1rem",
                     }}
                 >
-                    v 1.4
+                    v 1.6
                 </h1>
             </div>
         </Router>

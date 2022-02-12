@@ -10,6 +10,16 @@ import { spreadsheetID } from "../api/spreadsheetID";
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const doc = new GoogleSpreadsheet(spreadsheetID);
+const dateFormatOptions = [
+    { year: "numeric", month: "numeric", day: "numeric" },
+    { year: "2-digit", month: "numeric", day: "numeric" },
+    { year: "numeric", month: "2-digit", day: "numeric" },
+    { year: "2-digit", month: "2-digit", day: "numeric" },
+    { year: "numeric", month: "numeric", day: "2-digit" },
+    { year: "2-digit", month: "numeric", day: "2-digit" },
+    { year: "numeric", month: "2-digit", day: "2-digit" },
+    { year: "2-digit", month: "2-digit", day: "2-digit" },
+];
 
 function Scan(props) {
     const [todaySheet, setTodaySheet] = useState({});
@@ -17,43 +27,24 @@ function Scan(props) {
 
     const [isWorking, setIsWorking] = useState(false);
 
-    useEffect(
-        function () {
-            async function initializeWorker() {
-                await doc.useServiceAccountAuth(config);
-                await doc.loadInfo(); // loads document properties and worksheets
+    useEffect(function () {
+        async function initializeWorker() {
+            await doc.useServiceAccountAuth(config);
+            await doc.loadInfo(); // loads document properties and worksheets
 
-                if (!doc.sheetsByTitle[todayDate]) {
-                    toast.warning(
-                        `Please create the spreadsheet for today and reload the app to check in!`,
-                        {
-                            position: "bottom-center",
-                            autoClose: 300000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        }
-                    );
-                    toast.error(
-                        `❗ Could not find spreadsheet with today's date!`,
-                        {
-                            position: "bottom-center",
-                            autoClose: 300000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        }
-                    );
-                } else {
-                    const tS = doc.sheetsByTitle[todayDate];
+            let tD = new Date();
+
+            for (let option of dateFormatOptions) {
+                // console.log(tD.toLocaleDateString("en-US", option));
+                if (doc.sheetsByTitle[tD.toLocaleDateString("en-US", option)]) {
+                    tD = tD.toLocaleDateString("en-US", option);
+                    const tS = doc.sheetsByTitle[tD];
                     console.log("tS");
                     console.log(tS);
                     setTodaySheet(tS);
+                    setTodayDate(tD);
 
+                    console.log("toasting sccess");
                     toast.success(`✅ Ready to check in!`, {
                         position: "bottom-center",
                         autoClose: 3000,
@@ -63,14 +54,37 @@ function Scan(props) {
                         draggable: true,
                         progress: undefined,
                     });
+                    return;
                 }
             }
-            initializeWorker();
-        },
-        [todayDate]
-    );
+
+            toast.warning(
+                `Please create the spreadsheet for today and reload the app to check in!`,
+                {
+                    position: "bottom-center",
+                    autoClose: 300000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                }
+            );
+            toast.error(`❗ Could not find spreadsheet with today's date!`, {
+                position: "bottom-center",
+                autoClose: 300000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+        }
+        initializeWorker();
+    }, []);
 
     async function findStudentRow(ID) {
+        if (Object.keys(todaySheet).length === 0) return null;
         console.log("finding student row");
         const rows = await todaySheet.getRows();
         console.log("rows");
