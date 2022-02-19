@@ -146,6 +146,23 @@ function Print(props) {
         return results;
     }
 
+    async function addMarkedStudents() {
+        let results = [];
+
+        for (const row of todayRows) {
+            if (row["Print"]?.toLowerCase() == "x") {
+                let resultString = `${row["이름"]}:  ${row["ID"]}`;
+                let resultObject = {
+                    text: resultString,
+                    name: row["이름"],
+                    id: row["ID"],
+                };
+                results.push(resultObject);
+            }
+        }
+        setSelectedCodes([...selectedCodes, ...results]);
+    }
+
     return (
         <div
             style={{
@@ -377,6 +394,20 @@ function Print(props) {
                     </button>
                 </>
             )}
+            <button
+                style={{
+                    marginBottom: "1rem",
+                    marginTop: "1rem",
+                    border: "2px solid lightgray",
+                    borderRadius: "1rem",
+                    padding: "0.5rem",
+                    boxSizing: "border-box",
+                    width: "min(30rem, 80%)",
+                }}
+                onClick={addMarkedStudents}
+            >
+                Print codes for marked students.
+            </button>
             {/* <h1
                 style={{
                     textAlign: "center",
