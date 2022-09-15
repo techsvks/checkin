@@ -8,12 +8,10 @@ import Logo from "../images/Logo.png";
 import config from "../api/config";
 import header from "../api/header";
 //import { spreadsheetID } from "../api/spreadsheetID";
-//const spreadsheetID = '1JXha33UfFDKxfp8t909DC1BjurckxPB1xMN__f3FzZk';
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const spreadsheetID = '12AWolV6lI99LM6NNP1bUwYanAuNDSWRJI8X4-ozM98Q';
 const doc = new GoogleSpreadsheet(spreadsheetID);
-//const queue = require('message-queue')('redis');
 
 const MAX_COLUMN = 26;
 const ASCII_A = 65;
@@ -31,6 +29,9 @@ const SCAN_INTERVAL = 1000;
 const CHECK_INTERVAL = 5000;
 const scanList = [];
 const scanHistory = [];
+let idList = [];
+let columnIndex = {};
+let todaySheet;
 
 function RecentList(list, value) {
     list.push(value);
@@ -77,11 +78,11 @@ async function createIds(idIdx, tS)
     while (true)
     {
         // Read ROW_RANGE cell
-        const query = String.fromCharCode(ASCII_A+idIdx) + (rowIdx+1) + ":" + 
+        const query = String.fromCharCode(ASCII_A+idIdx) + (rowIdx+1) + ":" +
                       String.fromCharCode(ASCII_A+idIdx) + (rowIdx+ROW_RANGE);
         await tS.loadCells(query);
         console.log(query);
-        
+
         let nullCount = 0;
         for (let i = 0 ; i < ROW_RANGE ; i++)
         {
@@ -89,7 +90,7 @@ async function createIds(idIdx, tS)
             let id = null;
             if (entry.valueType == null)
             {
-                nullCount++; 
+                nullCount++;
             }
             else
             {
@@ -133,12 +134,9 @@ function findHeader(value, headers)
 
 function Scan(props) {
     const [recentList, dispatch] = useReducer(RecentList, []);
-    const [todaySheet, setTodaySheet] = useState({});
     const [todayDate, setTodayDate] = useState(new Date().toLocaleDateString());
 
     const [currentTimeSec, setCurrentTimeSec] = useState("");
-    const [columnIndex, setColumnIndex] = useState({});
-    const [idList, setIdList] = useState([]);
 
     async function checkId(id)
     {
@@ -155,7 +153,7 @@ function Scan(props) {
         } else {
             // Student ID is found
             console.log("Student ID: " + studentNumber + " Index:" + studentRowNumber);
-            const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" + 
+            const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" +
                           String.fromCharCode(ASCII_A+MAX_COLUMN-1) + (studentRowNumber);
             await todaySheet.loadCells(query);
             const idx = studentRowNumber - 1;
@@ -192,7 +190,10 @@ function Scan(props) {
             }
         }
     }
-    
+    useEffect(function() {
+        console.log("Update today data " + todayDate);
+    }, [todayDate]);
+
     useEffect(function () {
         async function initialize() {
             console.log('try to read sheet');
@@ -221,7 +222,7 @@ function Scan(props) {
             console.log("tS");
             console.log(tS);
             console.log(tS.title);
-            setTodaySheet(tS);
+            todaySheet = tS;
             setTodayDate(tD);
 
             console.log("toasting success");
@@ -230,18 +231,17 @@ function Scan(props) {
             // Find spreadsheet headers
             await tS.loadCells('A1:Z1');
             const header = createHeader(tS);
-            setColumnIndex(header);
+            columnIndex = header;
 
             // Find ID list
-            const ids = await createIds(header.id, tS);
-            setIdList(ids);
+            idList = await createIds(header.id, tS);
         }
         initialize();
 
     }, []);
 
     function findStudentRow(ID) {
-        console.log("finding student row");
+        console.log("finding student row " + idList.length);
         for (let i = 0 ; i < idList.length ; i++)
         {
             if (idList[i] != null && idList[i] === ID)
@@ -268,7 +268,7 @@ function Scan(props) {
         const id = parseInt(data);
         if (id > 0)
         {
-            scanList.push({tick:tick, id:parseInt(data)});     
+            scanList.push({tick:tick, id:parseInt(data)});
         }
 
         return;
@@ -276,7 +276,7 @@ function Scan(props) {
 
     function Recent() {
         const header = (<tr><th>Name</th><th>action</th><th>time</th></tr>);
-        return (<table>{header}
+        return (<table><tbody>{header}
             {recentList.map(entry => (
                 <tr>
                     <td key="name">{entry[0]}</td>
@@ -285,58 +285,56 @@ function Scan(props) {
                 </tr>
                ))
             }
-        </table>)
+        </tbody></table>)
     }
 
-    // Set clock updater
-    setInterval(() => {
-        let timeSec = new Date().toLocaleTimeString("en-US", {
-            hour12: true,
-            hour: "numeric",
-            minute: "numeric",
-            second: "numeric"
-        });
-        setCurrentTimeSec(timeSec);
-    }, 1000);
-
     // Set QR code scan updater
-    setInterval(async () => {
-        const tick = new Date().getTime();
-        while (scanHistory.length > 0 && tick - scanHistory[0].tick > CHECK_INTERVAL)
-        {
-            scanHistory.shift();
-        }   
-        while (scanList.length > 0)
-        {
-            let entry = scanList[0];
-            scanList.shift();
-
-            if (tick - entry.tick > SCAN_INTERVAL)
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            const tick = new Date().getTime();
+            let timeSec = new Date().toLocaleTimeString("en-US", {
+                hour12: true,
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric"
+            });
+            console.log(timeSec);
+            setCurrentTimeSec(timeSec);
+            while (scanHistory.length > 0 && tick - scanHistory[0].tick > CHECK_INTERVAL)
             {
-               continue; 
+                scanHistory.shift();
             }
-            let dup = false;
-            for (let h of scanHistory)
+            while (scanList.length > 0)
             {
-                if (h.id === entry.id)
+                let entry = scanList.shift();
+
+                if (tick - entry.tick > SCAN_INTERVAL)
                 {
-                    dup = true;
-                    break;
+                   continue;
                 }
+                let dup = false;
+                for (let h of scanHistory)
+                {
+                    if (h.id === entry.id)
+                    {
+                        dup = true;
+                        break;
+                    }
 
-            }   
-            if (dup)
-            {
-                continue;
+                }
+                if (dup)
+                {
+                    continue;
+                }
+                scanHistory.push(entry);
+                await checkId(entry.id);
+                break;
             }
-            scanHistory.push(entry);
-            await checkId(entry.id);
-            break;
-        }
-    }, 1000);
+            return () => clearInterval(interval);
+        }, 1000)}, []);
 
     return (
-        <div className="scan"> 
+        <div className="scan">
             <div className="div1" >
                 <img className="logo" src={Logo} alt="SVKS"/>
                 <h1>
