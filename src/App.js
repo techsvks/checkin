@@ -1,10 +1,10 @@
 import logo from "./logo.svg";
 import "./App.css";
 import Scan from "./pages/Scan";
+import Print from "./pages/Print";
 import { ToastContainer } from "react-toastify";
 import { Zoom } from "react-toastify";
 import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Print from "./pages/Print";
 
 function App() {
     return (
@@ -29,19 +29,9 @@ function App() {
                     transition={Zoom}
                     icon={false}
                 />
-
-                <h1
-                    style={{
-                        textAlign: "center",
-                        margin: 0,
-                        color: "lightgray",
-                        fontSize: "1rem",
-                        marginTop: "1rem",
-                        marginBottom: "1rem",
-                    }}
-                >
-                    v 1.7
-                </h1>
+                <h2>
+                    v 1.8
+                </h2>
             </div>
         </Router>
     );

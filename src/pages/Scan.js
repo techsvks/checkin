@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useReducer } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Reader from "../components/Reader";
@@ -29,20 +29,20 @@ const SCAN_INTERVAL = 1000;
 const CHECK_INTERVAL = 5000;
 const scanList = [];
 const scanHistory = [];
+const recentList = [];
 let idList = [];
 let columnIndex = {};
 let todaySheet;
 
-function RecentList(list, value) {
-    list.push(value);
-    if (list.length > 5)
+function addToRecentList(value) {
+    recentList.push(value);
+    if (recentList.length > 5)
     {
-        console.log("copy from " + list.length + " - 5");
-        list.shift();
+        console.log("copy from " + recentList.length + " - 5");
+        recentList.shift();
     }
-    console.log(list);
-    console.log(list.length);
-    return list;
+    console.log(recentList);
+    console.log(recentList.length);
 }
 
 function createHeader(tS)
@@ -133,7 +133,6 @@ function findHeader(value, headers)
 }
 
 function Scan(props) {
-    const [recentList, dispatch] = useReducer(RecentList, []);
     const [todayDate, setTodayDate] = useState(new Date().toLocaleDateString());
 
     const [currentTimeSec, setCurrentTimeSec] = useState("");
@@ -185,7 +184,7 @@ function Scan(props) {
             if (action != null)
             {
                 console.log(action + " " + currentTime);
-                await dispatch([name.value, action, currentTime]);
+                await addToRecentList([name.value, action, currentTime]);
                 await todaySheet.saveUpdatedCells();
             }
         }
@@ -298,7 +297,6 @@ function Scan(props) {
                 minute: "numeric",
                 second: "numeric"
             });
-            console.log(timeSec);
             setCurrentTimeSec(timeSec);
             while (scanHistory.length > 0 && tick - scanHistory[0].tick > CHECK_INTERVAL)
             {
