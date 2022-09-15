@@ -1,15 +1,22 @@
-import React, { useEffect, useState } from "react";
-import QrReader from "react-qr-scanner";
-import config from "../api/config";
+import React, { useEffect, useState, useReducer } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Logo from "../images/Logo.png";
 import Reader from "../components/Reader";
-import { spreadsheetID } from "../api/spreadsheetID";
 
+import "./Scan.css";
+import Logo from "../images/Logo.png";
+import config from "../api/config";
+import header from "../api/header";
+//import { spreadsheetID } from "../api/spreadsheetID";
+//const spreadsheetID = '1JXha33UfFDKxfp8t909DC1BjurckxPB1xMN__f3FzZk';
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
+const spreadsheetID = '12AWolV6lI99LM6NNP1bUwYanAuNDSWRJI8X4-ozM98Q';
 const doc = new GoogleSpreadsheet(spreadsheetID);
+//const queue = require('message-queue')('redis');
+
+const MAX_COLUMN = 26;
+const ASCII_A = 65;
 const dateFormatOptions = [
     { year: "numeric", month: "numeric", day: "numeric" },
     { year: "2-digit", month: "numeric", day: "numeric" },
@@ -20,82 +27,226 @@ const dateFormatOptions = [
     { year: "numeric", month: "2-digit", day: "2-digit" },
     { year: "2-digit", month: "2-digit", day: "2-digit" },
 ];
+const SCAN_INTERVAL = 1000;
+const CHECK_INTERVAL = 5000;
+const scanList = [];
+const scanHistory = [];
+
+function RecentList(list, value) {
+    list.push(value);
+    if (list.length > 5)
+    {
+        console.log("copy from " + list.length + " - 5");
+        list.shift();
+    }
+    console.log(list);
+    console.log(list.length);
+    return list;
+}
+
+function createHeader(tS)
+{
+    let idIdx = null;
+    let nameIdx = null;
+    let classIdx = null;
+    let checkInIdx = null;
+    let checkOutIdx = null;
+    for (let i = 0 ; i < MAX_COLUMN ; i++)
+    {
+        const entry = tS.getCell(0, i);
+        if (entry.valueType == null)
+        {
+            continue;
+        }
+        nameIdx = (findHeader(entry.value, header.name)) ? i : nameIdx;
+        idIdx = (findHeader(entry.value, header.id)) ? i : idIdx;
+        classIdx = (findHeader(entry.value, header.class)) ? i : classIdx;
+        checkInIdx = (findHeader(entry.value, header.checkIn)) ? i : checkInIdx;
+        checkOutIdx = (findHeader(entry.value, header.checkOut)) ? i : checkOutIdx;
+    }
+    return {id:idIdx, name:nameIdx, class:classIdx, checkIn:checkInIdx, checkOut:checkOutIdx};
+}
+
+
+async function createIds(idIdx, tS)
+{
+    let rowIdx = 0;
+    const ROW_RANGE = 50;
+    let ids = [];
+    let lastIdx = null;
+    while (true)
+    {
+        // Read ROW_RANGE cell
+        const query = String.fromCharCode(ASCII_A+idIdx) + (rowIdx+1) + ":" + 
+                      String.fromCharCode(ASCII_A+idIdx) + (rowIdx+ROW_RANGE);
+        await tS.loadCells(query);
+        console.log(query);
+        
+        let nullCount = 0;
+        for (let i = 0 ; i < ROW_RANGE ; i++)
+        {
+            const entry = tS.getCell(rowIdx + i, idIdx);
+            let id = null;
+            if (entry.valueType == null)
+            {
+                nullCount++; 
+            }
+            else
+            {
+                id = entry.value;
+                lastIdx = rowIdx + i;
+            }
+            ids.push(id);
+        }
+        // If all ROW_RANGE cells are empty, stop reading
+        if (nullCount === ROW_RANGE)
+        {
+            break;
+        }
+        rowIdx += ROW_RANGE;
+    }
+    ids = ids.slice(0, lastIdx+1);
+
+    return ids;
+}
+
+const toastProp = {
+    position: "bottom-center",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+}
+
+function findHeader(value, headers)
+{
+    for (let h of headers)
+    {
+        if (h === value) {
+            return true ;
+        }
+    }
+    return false;
+}
 
 function Scan(props) {
+    const [recentList, dispatch] = useReducer(RecentList, []);
     const [todaySheet, setTodaySheet] = useState({});
     const [todayDate, setTodayDate] = useState(new Date().toLocaleDateString());
 
-    const [isWorking, setIsWorking] = useState(false);
+    const [currentTimeSec, setCurrentTimeSec] = useState("");
+    const [columnIndex, setColumnIndex] = useState({});
+    const [idList, setIdList] = useState([]);
 
+    async function checkId(id)
+    {
+        console.log("handling scanning " + id);
+
+        // Locate student in the spreadsheet today
+        let studentNumber = id;
+        let studentRowNumber = findStudentRow(studentNumber);
+        const currentTime = getCurrentTime();
+
+        if (studentRowNumber == null) {
+            // Student does not exist
+            toast.error(`❗ Student ID could not be found!`, toastProp);
+        } else {
+            // Student ID is found
+            console.log("Student ID: " + studentNumber + " Index:" + studentRowNumber);
+            const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" + 
+                          String.fromCharCode(ASCII_A+MAX_COLUMN-1) + (studentRowNumber);
+            await todaySheet.loadCells(query);
+            const idx = studentRowNumber - 1;
+            const name = todaySheet.getCell(idx, columnIndex.name);
+            const checkIn = todaySheet.getCell(idx, columnIndex.checkIn);
+            const checkOut = todaySheet.getCell(idx, columnIndex.checkOut);
+
+            // Determine action to take
+            let action = null;
+            if (checkIn.valueType == null) {
+                // Check student in
+                checkIn.value = currentTime;
+                action = "Check In";
+
+                toast.success(
+                    `👋 Checked in ${name.value} at ${currentTime}!`, toastProp);
+            } else if (checkOut.valueType == null) {
+                // Check student out
+                checkOut.value = currentTime;
+                action = "Check Out";
+
+                toast.success(
+                    `🚪 Checked out ${name.value} at ${currentTime}!`, toastProp);
+            } else {
+                // Student check in and out are both filled
+                toast.warn(
+                    `🟡 ${name.value} is already accounted for!`, toastProp);
+            }
+            if (action != null)
+            {
+                console.log(action + " " + currentTime);
+                await dispatch([name.value, action, currentTime]);
+                await todaySheet.saveUpdatedCells();
+            }
+        }
+    }
+    
     useEffect(function () {
-        async function initializeWorker() {
+        async function initialize() {
+            console.log('try to read sheet');
             await doc.useServiceAccountAuth(config);
             await doc.loadInfo(); // loads document properties and worksheets
+            console.log('Done');
 
             let tD = new Date();
-
+            let found = false;
             for (let option of dateFormatOptions) {
                 // console.log(tD.toLocaleDateString("en-US", option));
                 if (doc.sheetsByTitle[tD.toLocaleDateString("en-US", option)]) {
+                    found = true;
                     tD = tD.toLocaleDateString("en-US", option);
-                    const tS = doc.sheetsByTitle[tD];
-                    console.log("tS");
-                    console.log(tS);
-                    setTodaySheet(tS);
-                    setTodayDate(tD);
-
-                    console.log("toasting sccess");
-                    toast.success(`✅ Ready to check in!`, {
-                        position: "bottom-center",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                    });
-                    return;
+                    break;
                 }
             }
+            if (found === false)
+            {
+                toast.warning(
+                    `Please create the spreadsheet for today and reload the app to check in!`, toastProp);
+                toast.error(`❗ Could not find spreadsheet with today's date!`, toastProp);
+                return;
+            }
+            const tS = doc.sheetsByTitle[tD];
+            console.log("tS");
+            console.log(tS);
+            console.log(tS.title);
+            setTodaySheet(tS);
+            setTodayDate(tD);
 
-            toast.warning(
-                `Please create the spreadsheet for today and reload the app to check in!`,
-                {
-                    position: "bottom-center",
-                    autoClose: 300000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                }
-            );
-            toast.error(`❗ Could not find spreadsheet with today's date!`, {
-                position: "bottom-center",
-                autoClose: 300000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
+            console.log("toasting success");
+            toast.success(`✅ Ready to check in!`, toastProp);
+
+            // Find spreadsheet headers
+            await tS.loadCells('A1:Z1');
+            const header = createHeader(tS);
+            setColumnIndex(header);
+
+            // Find ID list
+            const ids = await createIds(header.id, tS);
+            setIdList(ids);
         }
-        initializeWorker();
+        initialize();
+
     }, []);
 
-    async function findStudentRow(ID) {
-        if (Object.keys(todaySheet).length === 0) return null;
+    function findStudentRow(ID) {
         console.log("finding student row");
-        const rows = await todaySheet.getRows();
-        console.log("rows");
-        console.log(rows);
-        console.log("ID");
-        console.log(ID);
-
-        for (const row of rows) {
-            if (row["ID"] == ID) {
-                console.log(row["ID"]);
-                return row.rowNumber;
+        for (let i = 0 ; i < idList.length ; i++)
+        {
+            if (idList[i] != null && idList[i] === ID)
+            {
+                return i + 1;
             }
         }
         return null;
@@ -110,153 +261,103 @@ function Scan(props) {
     }
 
     async function handleScan(data) {
-        console.log("reached function");
-        console.log("data");
+        const tick = new Date().getTime();
+        console.log("reached function " + tick );
+
         console.log(data);
-        if (data) {
-            console.log("handling scanning");
-            if (isWorking) return; // Check if still checking in someone
-
-            setIsWorking(true);
-
-            // Locate student in the spreadsheet today
-            let studentNumber = data;
-            let studentRowNumber = await findStudentRow(studentNumber);
-            const currentTime = getCurrentTime();
-
-            if (studentRowNumber === null) {
-                // Student does not exist
-                toast.error(`❗ Student ID could not be found!`, {
-                    position: "bottom-center",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-            } else {
-                // Student ID is found
-                let todaySheetRows = await todaySheet.getRows();
-                let workingRow = todaySheetRows[parseInt(studentRowNumber) - 2];
-
-                // Determine action to take
-                if (!workingRow["Check in"]) {
-                    // Check student in
-                    workingRow["Check in"] = currentTime;
-                    await workingRow.save();
-
-                    toast.success(
-                        `👋 Checked in ${workingRow["이름"]} at ${currentTime}!`,
-                        {
-                            position: "bottom-center",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        }
-                    );
-                } else if (!workingRow["Check out"]) {
-                    // Check student out
-                    workingRow["Check out"] = currentTime;
-                    await workingRow.save();
-
-                    toast.success(
-                        `🚪 Checked out ${workingRow["이름"]} at ${currentTime}!`,
-                        {
-                            position: "bottom-center",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        }
-                    );
-                } else {
-                    // Student check in and out are both filled
-                    toast.warn(
-                        `🟡 ${workingRow["이름"]} is already accounted for!`,
-                        {
-                            position: "bottom-center",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        }
-                    );
-                }
-            }
-            setIsWorking(false);
+        const id = parseInt(data);
+        if (id > 0)
+        {
+            scanList.push({tick:tick, id:parseInt(data)});     
         }
+
+        return;
     }
 
-    function handleError(err) {
-        console.error(err);
+    function Recent() {
+        const header = (<tr><th>Name</th><th>action</th><th>time</th></tr>);
+        return (<table>{header}
+            {recentList.map(entry => (
+                <tr>
+                    <td key="name">{entry[0]}</td>
+                    <td key="action">{entry[1]}</td>
+                    <td key="time">{entry[2]}</td>
+                </tr>
+               ))
+            }
+        </table>)
     }
 
-    const previewStyle = {
-        height: "100%",
-        width: "auto",
-    };
+    // Set clock updater
+    setInterval(() => {
+        let timeSec = new Date().toLocaleTimeString("en-US", {
+            hour12: true,
+            hour: "numeric",
+            minute: "numeric",
+            second: "numeric"
+        });
+        setCurrentTimeSec(timeSec);
+    }, 1000);
+
+    // Set QR code scan updater
+    setInterval(async () => {
+        const tick = new Date().getTime();
+        while (scanHistory.length > 0 && tick - scanHistory[0].tick > CHECK_INTERVAL)
+        {
+            scanHistory.shift();
+        }   
+        while (scanList.length > 0)
+        {
+            let entry = scanList[0];
+            scanList.shift();
+
+            if (tick - entry.tick > SCAN_INTERVAL)
+            {
+               continue; 
+            }
+            let dup = false;
+            for (let h of scanHistory)
+            {
+                if (h.id === entry.id)
+                {
+                    dup = true;
+                    break;
+                }
+
+            }   
+            if (dup)
+            {
+                continue;
+            }
+            scanHistory.push(entry);
+            await checkId(entry.id);
+            break;
+        }
+    }, 1000);
 
     return (
-        <div>
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    flexDirection: "row",
-                    marginTop: "1rem",
-                    marginBottom: "1rem",
-                }}
-            >
-                <img
-                    style={{ height: "3rem", marginRight: "1rem" }}
-                    src={Logo}
-                ></img>
-                <h1 style={{ textAlign: "center", margin: 0 }}>
+        <div className="scan"> 
+            <div className="div1" >
+                <img className="logo" src={Logo} alt="SVKS"/>
+                <h1>
                     SVKS Check In/Out
                 </h1>
             </div>
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    height: "calc(100vh - 10rem)",
-                }}
-            >
-                {/* <QrReader
-                    delay={100}
-                    style={previewStyle}
-                    onError={handleError}
-                    onScan={handleScan}
-                    facingMode={"rear"}
-                /> */}
-
-                <Reader
+            <div className="clock">
+            {todayDate} {currentTimeSec}
+            </div>
+            <div className="div2">
+                <Reader className="reader"
                     onScan={handleScan}
                     myFunc={function () {
                         console.log("helo");
                     }}
                 ></Reader>
+                <div className="recent">
+                    Recent Check In/Out
+                    <Recent />
+                </div>
             </div>
-            {/* <h1
-                style={{
-                    textAlign: "center",
-                    margin: 0,
-                    color: "lightgray",
-                    fontSize: "1rem",
-                    marginTop: "1rem",
-                }}
-            >
-                v 1.1
-            </h1> */}
         </div>
     );
 }

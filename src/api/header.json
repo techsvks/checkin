@@ -1,0 +1,10 @@
+{
+    "name":["Name", "name", "이름"],
+    "id":["ID"],
+    "class":["Class", "학급"],
+    "grade":["Grade", "학년/성별"],
+    "checkIn": ["Check in"],
+    "checkOut": ["Check out"],
+    "absence": ["Absence", "결석 배정"],
+    "total": ["Total"]
+}
