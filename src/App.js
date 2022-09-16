@@ -30,7 +30,7 @@ function App() {
                     icon={false}
                 />
                 <h2>
-                    v 1.8
+                    v 1.8.1
                 </h2>
             </div>
         </Router>

@@ -33,14 +33,16 @@ const recentList = [];
 let idList = [];
 let columnIndex = {};
 let todaySheet;
+let recentCount = 0;
 
 function addToRecentList(value) {
-    recentList.push(value);
+    recentList.push([recentCount, ...value]);
     if (recentList.length > 5)
     {
         console.log("copy from " + recentList.length + " - 5");
         recentList.shift();
     }
+    recentCount += 1;
     console.log(recentList);
     console.log(recentList.length);
 }
@@ -137,58 +139,6 @@ function Scan(props) {
 
     const [currentTimeSec, setCurrentTimeSec] = useState("");
 
-    async function checkId(id)
-    {
-        console.log("handling scanning " + id);
-
-        // Locate student in the spreadsheet today
-        let studentNumber = id;
-        let studentRowNumber = findStudentRow(studentNumber);
-        const currentTime = getCurrentTime();
-
-        if (studentRowNumber == null) {
-            // Student does not exist
-            toast.error(`❗ Student ID could not be found!`, toastProp);
-        } else {
-            // Student ID is found
-            console.log("Student ID: " + studentNumber + " Index:" + studentRowNumber);
-            const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" +
-                          String.fromCharCode(ASCII_A+MAX_COLUMN-1) + (studentRowNumber);
-            await todaySheet.loadCells(query);
-            const idx = studentRowNumber - 1;
-            const name = todaySheet.getCell(idx, columnIndex.name);
-            const checkIn = todaySheet.getCell(idx, columnIndex.checkIn);
-            const checkOut = todaySheet.getCell(idx, columnIndex.checkOut);
-
-            // Determine action to take
-            let action = null;
-            if (checkIn.valueType == null) {
-                // Check student in
-                checkIn.value = currentTime;
-                action = "Check In";
-
-                toast.success(
-                    `👋 Checked in ${name.value} at ${currentTime}!`, toastProp);
-            } else if (checkOut.valueType == null) {
-                // Check student out
-                checkOut.value = currentTime;
-                action = "Check Out";
-
-                toast.success(
-                    `🚪 Checked out ${name.value} at ${currentTime}!`, toastProp);
-            } else {
-                // Student check in and out are both filled
-                toast.warn(
-                    `🟡 ${name.value} is already accounted for!`, toastProp);
-            }
-            if (action != null)
-            {
-                console.log(action + " " + currentTime);
-                await addToRecentList([name.value, action, currentTime]);
-                await todaySheet.saveUpdatedCells();
-            }
-        }
-    }
     useEffect(function() {
         console.log("Update today data " + todayDate);
     }, [todayDate]);
@@ -261,13 +211,11 @@ function Scan(props) {
 
     async function handleScan(data) {
         const tick = new Date().getTime();
-        console.log("reached function " + tick );
-
-        console.log(data);
+        console.log("reached function " + tick + " " + data);
         const id = parseInt(data);
         if (id > 0)
         {
-            scanList.push({tick:tick, id:parseInt(data)});
+            scanList.push({tick:tick, id:id});
         }
 
         return;
@@ -277,10 +225,10 @@ function Scan(props) {
         const header = (<tr><th>Name</th><th>action</th><th>time</th></tr>);
         return (<table><tbody>{header}
             {recentList.map(entry => (
-                <tr>
-                    <td key="name">{entry[0]}</td>
-                    <td key="action">{entry[1]}</td>
-                    <td key="time">{entry[2]}</td>
+                <tr key={entry[0]}>
+                    <td key="name">{entry[1]}</td>
+                    <td key="action">{entry[2]}</td>
+                    <td key="time">{entry[3]}</td>
                 </tr>
                ))
             }
@@ -289,6 +237,58 @@ function Scan(props) {
 
     // Set QR code scan updater
     useEffect(() => {
+        async function checkId(id)
+        {
+            console.log("handling scanning " + id);
+
+            // Locate student in the spreadsheet today
+            let studentNumber = id;
+            let studentRowNumber = findStudentRow(studentNumber);
+            const currentTime = getCurrentTime();
+
+            if (studentRowNumber == null) {
+                // Student does not exist
+                toast.error(`❗ Student ID could not be found!`, toastProp);
+            } else {
+                // Student ID is found
+                console.log("Student ID: " + studentNumber + " Index:" + studentRowNumber);
+                const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" +
+                              String.fromCharCode(ASCII_A+MAX_COLUMN-1) + (studentRowNumber);
+                await todaySheet.loadCells(query);
+                const idx = studentRowNumber - 1;
+                const name = todaySheet.getCell(idx, columnIndex.name);
+                const checkIn = todaySheet.getCell(idx, columnIndex.checkIn);
+                const checkOut = todaySheet.getCell(idx, columnIndex.checkOut);
+
+                // Determine action to take
+                let action = null;
+                if (checkIn.valueType == null) {
+                    // Check student in
+                    checkIn.value = currentTime;
+                    action = "Check In";
+
+                    toast.success(
+                        `👋 Checked in ${name.value} at ${currentTime}!`, toastProp);
+                } else if (checkOut.valueType == null) {
+                    // Check student out
+                    checkOut.value = currentTime;
+                    action = "Check Out";
+
+                    toast.success(
+                        `🚪 Checked out ${name.value} at ${currentTime}!`, toastProp);
+                } else {
+                    // Student check in and out are both filled
+                    toast.warn(
+                        `🟡 ${name.value} is already accounted for!`, toastProp);
+                }
+                if (action != null)
+                {
+                    console.log(action + " " + currentTime);
+                    await addToRecentList([name.value, action, currentTime]);
+                    await todaySheet.saveUpdatedCells();
+                }
+            }
+        }
         const interval = setInterval(async () => {
             const tick = new Date().getTime();
             let timeSec = new Date().toLocaleTimeString("en-US", {
@@ -350,7 +350,9 @@ function Scan(props) {
                     }}
                 ></Reader>
                 <div className="recent">
-                    Recent Check In/Out
+                    <h2>
+                        Recent Check In/Out
+                    </h2>
                     <Recent />
                 </div>
             </div>

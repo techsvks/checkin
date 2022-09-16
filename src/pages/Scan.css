@@ -1,6 +1,7 @@
 
 .scan {
-    background-color: #f0f0f0;
+    background-color: #ffffff;
+    padding: 1rem;
 }
 
 .div1 {
@@ -38,7 +39,20 @@
 }
 
 .reader {
-    background-color: #a8aca4;
+    background-color: #ffffff;
+    text-align: center;
+    margin-top: 1rem;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+    width: 50%;
+    padding: 1rem;
+}
+
+.recent {
+    background-color: #ffffff;
+    justify-content: center;
+    text-color: red;
     text-align: center;
     margin-top: 1rem;
     margin-left: 1rem;
@@ -56,3 +70,34 @@
     margin-bottom: 1rem;
     width: 50%;
 }
+
+table {
+    width: 500px;
+    text-color: red;
+}
+
+tbody {
+    font-color: red;
+}
+
+body {
+    background-color: #111111;
+}
+
+th {
+    font-size: 100%;
+    color: white;
+    background-color: #404040;
+}
+
+tr {
+    font-size: 120%;
+    background-color: #ffffff;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background-color: #cfcfcf;
+    text-align: center;
+}
+
