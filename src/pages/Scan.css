@@ -52,7 +52,6 @@
 .recent {
     background-color: #ffffff;
     justify-content: center;
-    text-color: red;
     text-align: center;
     margin-top: 1rem;
     margin-left: 1rem;
@@ -62,7 +61,7 @@
 }
 
 .recent {
-    background-color: #e0e0e0;
+    background-color: #ffffff;
     text-align: center;
     margin-top: 1rem;
     margin-left: 1rem;
@@ -73,11 +72,8 @@
 
 table {
     width: 500px;
-    text-color: red;
-}
-
-tbody {
-    font-color: red;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 body {
