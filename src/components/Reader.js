@@ -1,24 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 
+const PAUSE_COUNT = 5;
+let delayCount = 0;
 function Reader(props) {
     const video = useRef();
     const canvasRef = useRef();
-    const [delayed, setDelayed] = useState(false);
     const [result, setResult] = useState();
     const [black, setBlack] = useState(false);
+
+    function shutter() {
+        setBlack(true);
+        setTimeout(() => {
+            setBlack(false);
+        }, 300);
+    }
 
     useEffect(
         function () {
             if (result) {
                 props.onScan(result.data);
-                setBlack(true);
-                setTimeout(() => {
-                    setBlack(false);
-                }, 500);
                 setResult(null);
             }
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [result]
     );
 
@@ -29,6 +34,7 @@ function Reader(props) {
         return () => {
             clearInterval(inter);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(
@@ -48,7 +54,11 @@ function Reader(props) {
     );
 
     function tick() {
-        if (delayed) return;
+        if (props.periodic())
+        {
+            shutter();
+        }
+        if (--delayCount > 0) return;
         if (video.current.readyState === video.current.HAVE_ENOUGH_DATA) {
             canvasRef.current.height = video.current.videoHeight;
             canvasRef.current.width = video.current.videoWidth;
@@ -74,26 +84,10 @@ function Reader(props) {
             if (code) {
                 console.log(code.data);
                 setResult({ data: code.data, time: new Date() });
-                // props.onScan(code.data);
-                props.myFunc();
-                // setTimeout(() => {
-                //     requestAnimationFrame(tick);
-                // }, 1000);
-                setDelayed(true);
-                setTimeout(() => {
-                    setDelayed(false);
-                }, 3000);
-            } else {
-                // setTimeout(() => {
-                //     requestAnimationFrame(tick);
-                // }, 10);
-            }
+                delayCount = PAUSE_COUNT;
+            } 
             return;
-        } else {
-            // setTimeout(() => {
-            //     requestAnimationFrame(tick);
-            // }, 10);
-        }
+        } 
     }
 
     return (

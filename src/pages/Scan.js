@@ -34,6 +34,7 @@ let idList = [];
 let columnIndex = {};
 let todaySheet;
 let recentCount = 0;
+let shutter = false;
 
 function addToRecentList(value) {
     recentList.push([recentCount, ...value]);
@@ -221,6 +222,12 @@ function Scan(props) {
         return;
     }
 
+    function checkShutter() {
+        const ret = shutter;
+        shutter = false;
+        return ret;
+    }
+
     function Recent() {
         const header = (<tr><th>Name</th><th>action</th><th>time</th></tr>);
         return (<table><tbody>{header}
@@ -286,6 +293,7 @@ function Scan(props) {
                     console.log(action + " " + currentTime);
                     await addToRecentList([name.value, action, currentTime]);
                     await todaySheet.saveUpdatedCells();
+                    shutter = true;
                 }
             }
         }
@@ -345,9 +353,7 @@ function Scan(props) {
             <div className="div2">
                 <Reader className="reader"
                     onScan={handleScan}
-                    myFunc={function () {
-                        console.log("helo");
-                    }}
+                    periodic={checkShutter}
                 ></Reader>
                 <div className="recent">
                     <h2>
