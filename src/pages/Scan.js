@@ -341,7 +341,7 @@ function Scan(props) {
 
     return (
         <div className="scan">
-            <div className="div1" >
+            <div className="title" >
                 <img className="logo" src={Logo} alt="SVKS"/>
                 <h1>
                     SVKS Check In/Out
@@ -350,11 +350,12 @@ function Scan(props) {
             <div className="clock">
             {todayDate} {currentTimeSec}
             </div>
-            <div className="div2">
-                <Reader className="reader"
-                    onScan={handleScan}
-                    periodic={checkShutter}
-                ></Reader>
+            <div className="contents">
+                <div className="reader">
+                    <Reader
+                        onScan={handleScan}
+                        periodic={checkShutter}/>
+                </div>
                 <div className="recent">
                     <h2>
                         Recent Check In/Out

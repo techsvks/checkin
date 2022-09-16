@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import "../App.css";
 
 const PAUSE_COUNT = 5;
 let delayCount = 0;
@@ -94,8 +95,6 @@ function Reader(props) {
         <div>
             <video
                 style={{
-                    height: "100%",
-                    width: "auto",
                     filter: black ? "brightness(0%)" : "brightness(100%)",
                 }}
                 ref={video}

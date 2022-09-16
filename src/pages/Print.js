@@ -33,7 +33,6 @@ const dateFormatOptions = [
 ];
 
 function Print(props) {
-    const [todaySheet, setTodaySheet] = useState({});
     const [todayRows, setTodayRows] = useState({});
     const [QRValue, setQRValue] = useState("");
     const [inputText, setInputText] = useState("");
@@ -91,7 +90,6 @@ function Print(props) {
                 });
             } else {
                 let ts = doc.sheetsByTitle[sheetDate];
-                setTodaySheet(ts);
                 const rows = await ts.getRows();
                 setTodayRows(rows);
 
@@ -110,47 +108,50 @@ function Print(props) {
     }, []);
 
     useEffect(
-        async function () {
-            if (searchQuery) {
-                let sr = await findStudents(searchQuery);
-                if (sr.length === 1) {
-                    setQRValue(sr[0]);
+        () => {
+            async function findStudents(text) {
+                let results = [];
+
+                for (const row of todayRows) {
+                    if (results.length > 4) break;
+                    if (
+                        (row["ID"] + "").includes(text) ||
+                        row["이름"]?.includes(text)
+                    ) {
+                        let resultString = `${row["이름"]}:  ${row["ID"]}`;
+                        let resultObject = {
+                            text: resultString,
+                            name: row["이름"],
+                            id: row["ID"],
+                        };
+                        results.push(resultObject);
+                    }
                 }
-                if (sr.length > 0) setSearchResults(sr);
-            } else {
-                setQRValue({});
-                setSearchResults([]);
+                return results;
             }
+            async function query() {
+                if (searchQuery) {
+                    let sr = await findStudents(searchQuery);
+                    if (sr.length === 1) {
+                        setQRValue(sr[0]);
+                    }
+                    if (sr.length > 0) setSearchResults(sr);
+                } else {
+                    setQRValue({});
+                    setSearchResults([]);
+                }
+            }
+            query();
         },
-        [searchQuery]
+        [searchQuery, todayRows]
     );
 
-    async function findStudents(text) {
-        let results = [];
-
-        for (const row of todayRows) {
-            if (results.length > 4) break;
-            if (
-                (row["ID"] + "").includes(text) ||
-                row["이름"]?.includes(text)
-            ) {
-                let resultString = `${row["이름"]}:  ${row["ID"]}`;
-                let resultObject = {
-                    text: resultString,
-                    name: row["이름"],
-                    id: row["ID"],
-                };
-                results.push(resultObject);
-            }
-        }
-        return results;
-    }
 
     async function addMarkedStudents() {
         let results = [];
 
         for (const row of todayRows) {
-            if (row["Print"]?.toLowerCase() == "x") {
+            if (row["Print"]?.toLowerCase() === "x") {
                 let resultString = `${row["이름"]}:  ${row["ID"]}`;
                 let resultObject = {
                     text: resultString,
@@ -184,6 +185,7 @@ function Print(props) {
                 <img
                     style={{ height: "3rem", marginRight: "1rem" }}
                     src={Logo}
+                    alt="logo"
                 ></img>
                 <h1 style={{ textAlign: "center", margin: 0 }}>
                     Print QR Codes
@@ -285,7 +287,6 @@ function Print(props) {
                 <>
                     <div
                         style={{
-                            width: "100%",
                             width: "max(calc(100vw - 30rem), 80%)",
                             boxSizing: "border-box",
                             padding: "1rem",
@@ -324,7 +325,7 @@ function Print(props) {
                                     onClick={function () {
                                         setSelectedCodes(
                                             selectedCodes.filter(
-                                                (c) => c.id != code.id
+                                                (c) => parseInt(c.id) !== parseInt(code.id)
                                             )
                                         );
                                     }}
@@ -351,7 +352,6 @@ function Print(props) {
                             {selectedCodes.map((code) => (
                                 <div
                                     style={{
-                                        display: "flex",
                                         flexDirection: "column",
                                         alignItems: "center",
                                         // float: "left",

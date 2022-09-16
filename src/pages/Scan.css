@@ -1,10 +1,17 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+background-color: white;
+}
 
 .scan {
     background-color: #ffffff;
     padding: 1rem;
 }
 
-.div1 {
+.title {
     background-color: #ffffff;
     display: flex;
     justify-content: center;
@@ -20,16 +27,6 @@
     float: left;
 }
 
-.div2 {
-    display: flex;
-    justify-content: left;
-    overflow: hidden;
-    height: 30rem;
-    margin-top: 1rem;
-    margin-left: 1rem;
-    margin-bottom: 1rem;
-}
-
 .clock {
     background-color: #ffffff;
     text-align: center;
@@ -38,46 +35,36 @@
     font-size: 20pt;
 }
 
+.contents {
+    overflow: hidden;
+    height: auto;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
 .reader {
     background-color: #ffffff;
     text-align: center;
-    margin-top: 1rem;
-    margin-left: 1rem;
-    margin-right: 1rem;
-    margin-bottom: 1rem;
+    margin: 0;
     width: 50%;
     padding: 1rem;
-}
-
-.recent {
-    background-color: #ffffff;
-    justify-content: center;
-    text-align: center;
-    margin-top: 1rem;
-    margin-left: 1rem;
-    margin-right: 1rem;
-    margin-bottom: 1rem;
-    width: 50%;
+    float: left;
 }
 
 .recent {
     background-color: #ffffff;
     text-align: center;
-    margin-top: 1rem;
-    margin-left: 1rem;
-    margin-right: 1rem;
-    margin-bottom: 1rem;
+    margin: 0;
     width: 50%;
+    float: left;
+    padding: 1rem;
 }
 
 table {
     width: 500px;
     margin-left: auto;
     margin-right: auto;
-}
-
-body {
-    background-color: #111111;
 }
 
 th {
@@ -97,3 +84,17 @@ tr:nth-child(even) {
     text-align: center;
 }
 
+.menu tr:hover {
+    font-size: 120%;
+    background-color: #ffc0c0;
+    text-align: center;
+}
+
+@media only screen and (max-width: 900px) {
+    .reader {
+        width: 100%;
+    }
+    .recent {
+        width: 100%;
+    }
+}
