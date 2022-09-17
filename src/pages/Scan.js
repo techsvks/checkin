@@ -7,6 +7,7 @@ import "./Scan.css";
 import Logo from "../images/Logo.png";
 import config from "../api/config";
 import header from "../api/header";
+import text from "../api/text";
 //import { spreadsheetID } from "../api/spreadsheetID";
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
@@ -33,19 +34,23 @@ const recentList = [];
 let idList = [];
 let columnIndex = {};
 let todaySheet;
-let recentCount = 0;
 let shutter = false;
 
+// eslint-disable-next-line no-extend-native
+String.prototype.format = function() {
+    var formatted = this;
+    for (var i = 0; i < arguments.length; i++) {
+        var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+        formatted = formatted.replace(regexp, arguments[i]);
+    }
+    return formatted;
+}
+
+let recentCount = 0;
 function addToRecentList(value) {
     recentList.push([recentCount, ...value]);
-    if (recentList.length > 5)
-    {
-        console.log("copy from " + recentList.length + " - 5");
-        recentList.shift();
-    }
+    if (recentList.length > 5) recentList.shift();
     recentCount += 1;
-    console.log(recentList);
-    console.log(recentList.length);
 }
 
 function createHeader(tS)
@@ -58,10 +63,7 @@ function createHeader(tS)
     for (let i = 0 ; i < MAX_COLUMN ; i++)
     {
         const entry = tS.getCell(0, i);
-        if (entry.valueType == null)
-        {
-            continue;
-        }
+        if (entry.valueType == null) continue;
         nameIdx = (findHeader(entry.value, header.name)) ? i : nameIdx;
         idIdx = (findHeader(entry.value, header.id)) ? i : idIdx;
         classIdx = (findHeader(entry.value, header.class)) ? i : classIdx;
@@ -103,10 +105,7 @@ async function createIds(idIdx, tS)
             ids.push(id);
         }
         // If all ROW_RANGE cells are empty, stop reading
-        if (nullCount === ROW_RANGE)
-        {
-            break;
-        }
+        if (nullCount === ROW_RANGE) break;
         rowIdx += ROW_RANGE;
     }
     ids = ids.slice(0, lastIdx+1);
@@ -121,23 +120,19 @@ const toastProp = {
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
-    progress: undefined,
+    progress: undefined
 }
 
 function findHeader(value, headers)
 {
     for (let h of headers)
-    {
-        if (h === value) {
-            return true ;
-        }
-    }
+        if (h === value) return true ;
+
     return false;
 }
 
 function Scan(props) {
     const [todayDate, setTodayDate] = useState(new Date().toLocaleDateString());
-
     const [currentTimeSec, setCurrentTimeSec] = useState("");
 
     useEffect(function() {
@@ -154,7 +149,6 @@ function Scan(props) {
             let tD = new Date();
             let found = false;
             for (let option of dateFormatOptions) {
-                // console.log(tD.toLocaleDateString("en-US", option));
                 if (doc.sheetsByTitle[tD.toLocaleDateString("en-US", option)]) {
                     found = true;
                     tD = tD.toLocaleDateString("en-US", option);
@@ -164,19 +158,17 @@ function Scan(props) {
             if (found === false)
             {
                 toast.warning(
-                    `Please create the spreadsheet for today and reload the app to check in!`, toastProp);
-                toast.error(`❗ Could not find spreadsheet with today's date!`, toastProp);
+                    text.reloadPage, toastProp);
+                toast.error(text.noSheet, toastProp);
                 return;
             }
             const tS = doc.sheetsByTitle[tD];
             console.log("tS");
-            console.log(tS);
             console.log(tS.title);
             todaySheet = tS;
             setTodayDate(tD);
 
-            console.log("toasting success");
-            toast.success(`✅ Ready to check in!`, toastProp);
+            toast.success(text.loaded, toastProp);
 
             // Find spreadsheet headers
             await tS.loadCells('A1:Z1');
@@ -194,10 +186,7 @@ function Scan(props) {
         console.log("finding student row " + idList.length);
         for (let i = 0 ; i < idList.length ; i++)
         {
-            if (idList[i] != null && idList[i] === ID)
-            {
-                return i + 1;
-            }
+            if (idList[i] != null && idList[i] === ID) return i + 1;
         }
         return null;
     }
@@ -214,10 +203,7 @@ function Scan(props) {
         const tick = new Date().getTime();
         console.log("reached function " + tick + " " + data);
         const id = parseInt(data);
-        if (id > 0)
-        {
-            scanList.push({tick:tick, id:id});
-        }
+        if (id > 0) scanList.push({tick:tick, id:id});
 
         return;
     }
@@ -240,6 +226,14 @@ function Scan(props) {
                ))
             }
         </tbody></table>)
+    }
+
+    function checkDuplicate(id) {
+        for (let h of scanHistory)
+        {
+            if (h.id === id) return true;
+        }
+        return false;
     }
 
     // Set QR code scan updater
@@ -274,29 +268,28 @@ function Scan(props) {
                     checkIn.value = currentTime;
                     action = "Check In";
 
-                    toast.success(
-                        `👋 Checked in ${name.value} at ${currentTime}!`, toastProp);
+                    toast.success(text.checkIn.format(name.value, currentTime), toastProp);
                 } else if (checkOut.valueType == null) {
                     // Check student out
                     checkOut.value = currentTime;
                     action = "Check Out";
 
-                    toast.success(
-                        `🚪 Checked out ${name.value} at ${currentTime}!`, toastProp);
+                    toast.success(text.checkOut.format(name.value, currentTime), toastProp);
                 } else {
                     // Student check in and out are both filled
                     toast.warn(
-                        `🟡 ${name.value} is already accounted for!`, toastProp);
+                        text.alreadyDone.format(name.value), toastProp);
                 }
                 if (action != null)
                 {
                     console.log(action + " " + currentTime);
-                    await addToRecentList([name.value, action, currentTime]);
+                    addToRecentList([name.value, action, currentTime]);
                     await todaySheet.saveUpdatedCells();
                     shutter = true;
                 }
             }
         }
+
         const interval = setInterval(async () => {
             const tick = new Date().getTime();
             let timeSec = new Date().toLocaleTimeString("en-US", {
@@ -314,49 +307,33 @@ function Scan(props) {
             {
                 let entry = scanList.shift();
 
-                if (tick - entry.tick > SCAN_INTERVAL)
-                {
-                   continue;
-                }
-                let dup = false;
-                for (let h of scanHistory)
-                {
-                    if (h.id === entry.id)
-                    {
-                        dup = true;
-                        break;
-                    }
-
-                }
-                if (dup)
-                {
-                    continue;
-                }
+                if (tick - entry.tick > SCAN_INTERVAL || checkDuplicate(entry.id)) continue;
                 scanHistory.push(entry);
                 await checkId(entry.id);
                 break;
             }
             return () => clearInterval(interval);
-        }, 1000)}, []);
+        }, 200)
+    }, []);
 
     return (
-        <div className="scan">
-            <div className="title" >
-                <img className="logo" src={Logo} alt="SVKS"/>
+        <div id="scan">
+            <div id="title" >
+                <img id="logo" src={Logo} alt="SVKS"/>
                 <h1>
                     SVKS Check In/Out
                 </h1>
             </div>
-            <div className="clock">
+            <div id="clock">
             {todayDate} {currentTimeSec}
             </div>
-            <div className="contents">
-                <div className="reader">
+            <div id="contents">
+                <div id="reader">
                     <Reader
                         onScan={handleScan}
                         periodic={checkShutter}/>
                 </div>
-                <div className="recent">
+                <div id="recent">
                     <h2>
                         Recent Check In/Out
                     </h2>

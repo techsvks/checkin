@@ -6,12 +6,12 @@ body {
 background-color: white;
 }
 
-.scan {
+#scan {
     background-color: #ffffff;
     padding: 1rem;
 }
 
-.title {
+#title {
     background-color: #ffffff;
     display: flex;
     justify-content: center;
@@ -20,14 +20,14 @@ background-color: white;
     margin-bottom: 1rem;
 }
 
-.logo {
+#logo {
     height: 3rem;
     margin-right: 1rem;
     background-color: #ffffff;
     float: left;
 }
 
-.clock {
+#clock {
     background-color: #ffffff;
     text-align: center;
     margin-top: 1rem;
@@ -35,7 +35,7 @@ background-color: white;
     font-size: 20pt;
 }
 
-.contents {
+#contents {
     overflow: hidden;
     height: auto;
     width: 100%;
@@ -43,7 +43,7 @@ background-color: white;
     margin: 0;
 }
 
-.reader {
+#reader {
     background-color: #ffffff;
     text-align: center;
     margin: 0;
@@ -52,13 +52,108 @@ background-color: white;
     float: left;
 }
 
-.recent {
+#recent {
     background-color: #ffffff;
     text-align: center;
     margin: 0;
     width: 50%;
     float: left;
     padding: 1rem;
+}
+
+#print {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background-color: white;
+}
+
+#printContents {
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+    width: max(calc(100vw - 30rem), 80%);
+    font-size: 1.5rem;
+}
+
+#search {
+    width: 100%;
+    font-size: 1.5rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    outline: none;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#searchResult {
+    width: 100%;
+    margin-top: 0.5rem;
+    border: 1px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    user-select: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#selected {
+    width: max(calc(100vw - 30rem), 80%);
+    box-sizing: border-box;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+#selectedItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#deleteButton {
+    margin-top: 0.5rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: 3rem;
+}
+
+#qrList {
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+}
+
+#qrCode {
+    flex-direction: column;
+    align-items: center;
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 1rem;
+}
+
+#qrName {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+#printButton {
+    font-size: 1.0rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: min(30rem, 80%);
 }
 
 table {
@@ -98,3 +193,4 @@ tr:nth-child(even) {
         width: 100%;
     }
 }
+

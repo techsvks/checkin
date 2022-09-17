@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./Scan.css"
 import QRCode from "react-qr-code";
 import { toast } from "react-toastify";
 import config from "../api/config";
@@ -7,9 +8,21 @@ import Logo from "../images/Logo.png";
 import { useDebounce } from "use-debounce";
 import { useReactToPrint } from "react-to-print";
 import { ToPrint } from "../components/ToPrint";
+import text from "../api/text";
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(spreadsheetID);
+
+
+const toastProp = {
+    position: "bottom-center",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+};
 
 const _MS_PER_DAY = 1000 * 60 * 60 * 24;
 function dateDiffInDays(a, b) {
@@ -31,6 +44,8 @@ const dateFormatOptions = [
     { year: "numeric", month: "2-digit", day: "2-digit" },
     { year: "2-digit", month: "2-digit", day: "2-digit" },
 ];
+
+const selectedIds = new Set();
 
 function Print(props) {
     const [todayRows, setTodayRows] = useState({});
@@ -70,41 +85,25 @@ function Print(props) {
     }
 
     useEffect(function () {
-        async function initializeWorker() {
+        async function initialize() {
             await doc.useServiceAccountAuth(config);
             await doc.loadInfo(); // loads document properties and worksheets
 
             // find today sheet
-
             let sheetDate = findMostRecentSheetDate();
 
             if (!doc.sheetsByTitle[sheetDate]) {
-                toast.error(`❗ Could not find data to use.`, {
-                    position: "bottom-center",
-                    autoClose: 300000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
+                toast.error(text.failedToOpen, toastProp);
             } else {
                 let ts = doc.sheetsByTitle[sheetDate];
                 const rows = await ts.getRows();
                 setTodayRows(rows);
 
-                toast.success(`✅ Found ID data.`, {
-                    position: "bottom-center",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
+                toast.success(text.succeededToOpen, toastProp);
+                console.log("Sheet read " + rows.length);
             }
         }
-        initializeWorker();
+        initialize();
     }, []);
 
     useEffect(
@@ -151,7 +150,7 @@ function Print(props) {
         let results = [];
 
         for (const row of todayRows) {
-            if (row["Print"]?.toLowerCase() === "x") {
+            if (row["Print"]?.toLowerCase() === "x" && !selectedIds.has(row["ID"])) {
                 let resultString = `${row["이름"]}:  ${row["ID"]}`;
                 let resultObject = {
                     text: resultString,
@@ -159,58 +158,26 @@ function Print(props) {
                     id: row["ID"],
                 };
                 results.push(resultObject);
+                selectedIds.add(row["ID"]);
             }
         }
         setSelectedCodes([...selectedCodes, ...results]);
     }
 
     return (
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "column",
-                backgroundColor: "white",
-            }}
-        >
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    flexDirection: "row",
-                    marginTop: "1rem",
-                    marginBottom: "1rem",
-                }}
-            >
-                <img
-                    style={{ height: "3rem", marginRight: "1rem" }}
+        <div id="print">
+            <div id="title">
+                <img id="logo"
                     src={Logo}
                     alt="logo"
                 ></img>
-                <h1 style={{ textAlign: "center", margin: 0 }}>
+                <h1>
                     Print QR Codes
                 </h1>
             </div>
-            <div
-                style={{
-                    marginTop: "4rem",
-                    marginBottom: "4rem",
-                    width: "max(calc(100vw - 30rem), 80%)",
-                    fontSize: "1.5rem",
-                }}
-            >
-                <input
+            <div id="printContents" >
+                <input id="search"
                     placeholder={"Search for student or enter a number..."}
-                    style={{
-                        width: "100%",
-                        fontSize: "1.5rem",
-                        border: "2px solid lightgray",
-                        borderRadius: "1rem",
-                        outline: "none",
-                        padding: "1rem",
-                        boxSizing: "border-box",
-                        textAlign: "center",
-                    }}
                     value={inputText}
                     onChange={(event) => {
                         setInputText(event.target.value);
@@ -219,36 +186,21 @@ function Print(props) {
 
                 {searchResults.map((result) => {
                     return (
-                        <div
+                        <div key={result.id} id="searchResult"
                             onClick={function () {
                                 // setQRValue(result.id);
                                 // setInputText(result.name);
                                 // function () {
+
+                                if (!selectedIds.has(result.id)) {
                                 setSelectedCodes([...selectedCodes, result]);
+                                selectedIds.add(result.id);
+            }
                                 // console.log(QRValue);
                                 // }
                             }}
-                            style={{
-                                width: "100%",
-                                marginTop: "0.5rem",
-                                border: "1px solid lightgray",
-                                borderRadius: "1rem",
-                                padding: "0.5rem",
-                                boxSizing: "border-box",
-                                userSelect: "none",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
                         >
-                            <h4
-                                style={{
-                                    marginRight: "2rem",
-                                    marginTop: 0,
-                                    marginBottom: 0,
-                                }}
-                            >
+                            <h4>
                                 {result.text}
                             </h4>
                             {QRValue.id && (
@@ -258,168 +210,46 @@ function Print(props) {
                     );
                 })}
             </div>
-            {/* {QRValue && QRValue.id && <QRCode value={QRValue.id} />}
-            <button
-                style={{
-                    marginTop: "2rem",
-                    marginBottom: "2rem",
-                    border: "2px solid lightgray",
-                    borderRadius: "1rem",
-                    padding: "0.5rem",
-                    width: "10rem",
-                }}
-                onClick={function () {
-                    setSelectedCodes([...selectedCodes, QRValue]);
-                    console.log(QRValue);
-                }}
-            >
-                Select
-            </button> */}
-
-            {/* {QRValue && (
-                <>
-                </>
-            )} */}
-
-            {/* <h1 style={{ textAlign: "center", margin: 0 }}>{QRValue.text}</h1> */}
-            {/* <h1 style={{ textAlign: "center", margin: 0 }}>To print: </h1> */}
             {selectedCodes.length > 0 && (
                 <>
-                    <div
-                        style={{
-                            width: "max(calc(100vw - 30rem), 80%)",
-                            boxSizing: "border-box",
-                            padding: "1rem",
-                            display: "grid",
-                            gridTemplateColumns:
-                                "repeat(auto-fill, minmax(150px, 1fr))",
-                            gap: "1rem",
-                        }}
-                    >
+                    <div id="selected">
                         {selectedCodes.map((code) => (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                }}
-                            >
+                            <div key={code.id} id="selectedItem">
                                 <QRCode size={100} value={code.id} />
-                                <p
-                                    style={{
-                                        marginTop: "0.5rem",
-                                        marginBottom: 0,
-                                    }}
-                                >
-                                    {code.text}
-                                </p>
-                                <button
-                                    style={{
-                                        marginTop: "0.5rem",
-                                        border: "2px solid lightgray",
-                                        borderRadius: "1rem",
-                                        padding: "0.5rem",
-                                        boxSizing: "border-box",
-                                        width: "3rem",
-                                    }}
+                                <p id="qrName"> {code.text} </p>
+                                <button id="deleteButton"
                                     onClick={function () {
                                         setSelectedCodes(
                                             selectedCodes.filter(
                                                 (c) => parseInt(c.id) !== parseInt(code.id)
                                             )
                                         );
+                                        selectedIds.delete(code.id);
                                     }}
-                                >
-                                    X
-                                </button>
+                                > X </button>
                             </div>
                         ))}
                     </div>
                     <ToPrint ref={printRef}>
-                        <div
-                            style={{
-                                width: "100%",
-                                // width: "max(calc(100vw - 30rem), 80%)",
-                                boxSizing: "border-box",
-                                // padding: "1rem",
-                                // display: "grid",
-                                // gridTemplateColumns:
-                                //     "repeat(auto-fill, minmax(150px, 1fr))",
-                                // gap: "3rem",
-                                display: "block",
-                            }}
-                        >
+                        <div id="qrList">
                             {selectedCodes.map((code) => (
-                                <div
-                                    style={{
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        // float: "left",
-                                        display: "inline-block",
-                                        boxSizing: "border-box",
-                                        padding: "1rem",
-                                    }}
-                                >
-                                    <QRCode
-                                        style={{ margin: "2rem" }}
-                                        size={160}
-                                        value={code.id}
-                                    />
-                                    <p
-                                        style={{
-                                            marginTop: "0.5rem",
-                                            marginBottom: 0,
-                                            textAlign: "center",
-                                        }}
-                                    >
+                                <div key={code.id} id="qrCode" >
+                                    <QRCode size={160} value={code.id} />
+                                    <p id="qrName" >
                                         {code.text}
                                     </p>
                                 </div>
                             ))}
                         </div>
                     </ToPrint>
-                    <button
-                        style={{
-                            marginBottom: "1rem",
-                            marginTop: "1rem",
-                            border: "2px solid lightgray",
-                            borderRadius: "1rem",
-                            padding: "0.5rem",
-                            boxSizing: "border-box",
-                            width: "min(30rem, 80%)",
-                        }}
-                        onClick={handlePrint}
-                    >
+                    <button id="printButton" onClick={handlePrint}>
                         Print codes.
                     </button>
                 </>
             )}
-            <button
-                style={{
-                    marginBottom: "1rem",
-                    marginTop: "1rem",
-                    border: "2px solid lightgray",
-                    borderRadius: "1rem",
-                    padding: "0.5rem",
-                    boxSizing: "border-box",
-                    width: "min(30rem, 80%)",
-                }}
-                onClick={addMarkedStudents}
-            >
+            <button id="printButton" onClick={addMarkedStudents}>
                 Print codes for marked students.
             </button>
-            {/* <h1
-                style={{
-                    textAlign: "center",
-                    margin: 0,
-                    color: "lightgray",
-                    fontSize: "1rem",
-                    marginTop: "1rem",
-                    marginBottom: "1rem",
-                }}
-            >
-                v 1.1
-            </h1> */}
         </div>
     );
 }

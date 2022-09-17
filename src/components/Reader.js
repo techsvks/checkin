@@ -55,10 +55,7 @@ function Reader(props) {
     );
 
     function tick() {
-        if (props.periodic())
-        {
-            shutter();
-        }
+        if (props.periodic()) shutter();
         if (--delayCount > 0) return;
         if (video.current.readyState === video.current.HAVE_ENOUGH_DATA) {
             canvasRef.current.height = video.current.videoHeight;
