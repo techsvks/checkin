@@ -1,0 +1,196 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+background-color: white;
+}
+
+#scan {
+    background-color: #ffffff;
+    padding: 1rem;
+}
+
+#title {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+#logo {
+    height: 3rem;
+    margin-right: 1rem;
+    background-color: #ffffff;
+    float: left;
+}
+
+#clock {
+    background-color: #ffffff;
+    text-align: center;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    font-size: 20pt;
+}
+
+#contents {
+    overflow: hidden;
+    height: auto;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+#reader {
+    background-color: #ffffff;
+    text-align: center;
+    margin: 0;
+    width: 50%;
+    padding: 1rem;
+    float: left;
+}
+
+#recent {
+    background-color: #ffffff;
+    text-align: center;
+    margin: 0;
+    width: 50%;
+    float: left;
+    padding: 1rem;
+}
+
+#print {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background-color: white;
+}
+
+#printContents {
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+    width: max(calc(100vw - 30rem), 80%);
+    font-size: 1.5rem;
+}
+
+#search {
+    width: 100%;
+    font-size: 1.5rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    outline: none;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#searchResult {
+    width: 100%;
+    margin-top: 0.5rem;
+    border: 1px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    user-select: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#selected {
+    width: max(calc(100vw - 30rem), 80%);
+    box-sizing: border-box;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+#selectedItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#deleteButton {
+    margin-top: 0.5rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: 3rem;
+}
+
+#qrList {
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+}
+
+#qrCode {
+    flex-direction: column;
+    align-items: center;
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 1rem;
+}
+
+#qrName {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+#printButton {
+    font-size: 1.0rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    border: 2px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: min(30rem, 80%);
+}
+
+table {
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+th {
+    font-size: 100%;
+    color: white;
+    background-color: #404040;
+}
+
+tr {
+    font-size: 120%;
+    background-color: #ffffff;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background-color: #cfcfcf;
+    text-align: center;
+}
+
+.menu tr:hover {
+    font-size: 120%;
+    background-color: #ffc0c0;
+    text-align: center;
+}
+
+@media only screen and (max-width: 900px) {
+    #reader {
+        width: 100%;
+    }
+    #recent {
+        width: 100%;
+    }
+}
+

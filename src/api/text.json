@@ -1,0 +1,11 @@
+{
+    "noSheet":"❗ Could not find spreadsheet with today's date!",
+    "reloadPage":"Please create the spreadsheet for today and reload the app to check in!",
+    "loaded":"✅ Ready to check in!",
+    "noStudent":"❗ Student ID could not be found!",
+    "checkIn":"👋 Checked in {0} at {1}!",
+    "checkOut":"🚪 Checked out {0} at {1}!",
+    "alreadyDone":"🟡 {0} is already accounted for!",
+    "failedToOpen":"❗ Could not find data to use.",
+    "succeededToOpen":"✅ Found ID data."
+}
