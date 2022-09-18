@@ -186,10 +186,10 @@ tr:nth-child(even) {
 }
 
 @media only screen and (max-width: 900px) {
-    .reader {
+    #reader {
         width: 100%;
     }
-    .recent {
+    #recent {
         width: 100%;
     }
 }

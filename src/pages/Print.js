@@ -11,7 +11,18 @@ import { ToPrint } from "../components/ToPrint";
 import text from "../api/text";
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const doc = new GoogleSpreadsheet(spreadsheetID);
+let sheetKey;
+if (process.env.NODE_ENV === "development")
+{
+    console.log("Development mode");
+    sheetKey = "development";
+}
+else
+{
+    console.log("Production mode");
+    sheetKey = "production";
+}
+const doc = new GoogleSpreadsheet(spreadsheetID[sheetKey]);
 
 
 const toastProp = {

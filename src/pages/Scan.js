@@ -8,11 +8,22 @@ import Logo from "../images/Logo.png";
 import config from "../api/config";
 import header from "../api/header";
 import text from "../api/text";
-//import { spreadsheetID } from "../api/spreadsheetID";
+import { spreadsheetID } from "../api/spreadsheetID";
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
-const spreadsheetID = '12AWolV6lI99LM6NNP1bUwYanAuNDSWRJI8X4-ozM98Q';
-const doc = new GoogleSpreadsheet(spreadsheetID);
+let sheetKey;
+if (process.env.NODE_ENV === "development")
+{
+    console.log("Development mode");
+    sheetKey = "development";
+}
+else
+{
+    console.log("Production mode");
+    sheetKey = "production";
+}
+
+const doc = new GoogleSpreadsheet(spreadsheetID[sheetKey]);
 
 const MAX_COLUMN = 26;
 const ASCII_A = 65;
@@ -60,7 +71,7 @@ function createHeader(tS)
     let classIdx = null;
     let checkInIdx = null;
     let checkOutIdx = null;
-    for (let i = 0 ; i < MAX_COLUMN ; i++)
+    for (let i = 0 ; i < Math.min(MAX_COLUMN, tS.columnCount) ; i++)
     {
         const entry = tS.getCell(0, i);
         if (entry.valueType == null) continue;
@@ -80,11 +91,13 @@ async function createIds(idIdx, tS)
     const ROW_RANGE = 50;
     let ids = [];
     let lastIdx = null;
-    while (true)
+    const rowSize = tS.rowCount;
+    while (rowIdx < rowSize-1)
     {
         // Read ROW_RANGE cell
+        const increment = Math.min(rowSize - rowIdx, ROW_RANGE);
         const query = String.fromCharCode(ASCII_A+idIdx) + (rowIdx+1) + ":" +
-                      String.fromCharCode(ASCII_A+idIdx) + (rowIdx+ROW_RANGE);
+                      String.fromCharCode(ASCII_A+idIdx) + (rowIdx+increment);
         await tS.loadCells(query);
         console.log(query);
 
@@ -106,7 +119,7 @@ async function createIds(idIdx, tS)
         }
         // If all ROW_RANGE cells are empty, stop reading
         if (nullCount === ROW_RANGE) break;
-        rowIdx += ROW_RANGE;
+        rowIdx += increment;
     }
     ids = ids.slice(0, lastIdx+1);
 
