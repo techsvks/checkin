@@ -1,4 +1,5 @@
 {
+    "loading":"Loading in progress...",
     "noSheet":"❗ Could not find spreadsheet with today's date!",
     "reloadPage":"Please create the spreadsheet for today and reload the app to check in!",
     "loaded":"✅ Ready to check in!",
