@@ -105,13 +105,13 @@ function Scan(props) {
     }
 
     function Recent() {
-        const header = (<tr><th>Name</th><th>action</th><th>time</th></tr>);
+        const header = (<tr><th id="name">Name</th><th id="action">action</th><th id="time">time</th></tr>);
         return (<table><tbody>{header}
             {recentList.map(entry => (
                 <tr key={entry[0]}>
-                    <td key="name">{entry[1]}</td>
-                    <td key="action">{entry[2]}</td>
-                    <td key="time">{entry[3]}</td>
+                    <td key="name" id="name">{entry[1]}</td>
+                    <td key="action" id="action">{entry[2]}</td>
+                    <td key="time" id="time">{entry[3]}</td>
                 </tr>
                ))
             }

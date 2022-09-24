@@ -42,39 +42,40 @@ hr {
 
 #nav {
     width: max(30%, 400px);
-    margin-left: 1rem;
-    margin-right: auto;
     font-size: 120%;
     border-style: hidden;
     border-spacing: 0px;
     padding-top: 5px;
     border: hidden;
+    padding-left: 0px;
+    padding-right: 5px;
+    border: hidden;
 }
 
 #nav_item {
-    width: min(40%, 200px);
-    margin-left: auto;
-    margin-right: auto;
+    width: min(40%, 300px);
     font-size: 120%;
     border: hidden;
-    padding: 5px;
     font-weight: bold;
     overflow: hidden;
     padding-top: 0px;
     padding-bottom: 0px;
-    padding-left:1rem;
-    padding-right:1rem;
+    padding-left:10px;
+    padding-right:0px;
+    border: hidden;
 }
 #nav_button {
     background-color:#e0e0e0;
-    width: min(100%, 200px);
-    margin-left: auto;
-    margin-right: auto;
+    width: min(100%, 300px);
+    margin-left: 0px;
+    margin-right: 0px;
     font-size: 80%;
     border-style: hidden;
     border-radius: 10px;
-    padding: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     font-weight: bold;
+    border: hidden;
 }
 a:link a:visited a:hover a:active {
     text-decoration: none;
@@ -86,7 +87,7 @@ a:link a:visited a:hover a:active {
     color: white;
 }
 
-@media only screen and (max-width: 900px) {
+@media only screen and (max-width:650px) {
     #nav {
     margin-left: auto;
     margin-right: auto;
