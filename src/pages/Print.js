@@ -27,27 +27,36 @@ function Print(props) {
     useEffect(function () {
         async function initialize() {
             toast.dismiss();
-            console.log("Wait for sheet");
-            const prop = toastProp;
-            prop.autoClose = false;
-            console.log(prop);
-            const initNoti = toast.info(text.loading, prop);
             while (!props.doc.isOpen()) {
-                console.log("check");
-                await sleep(1.0);
+                await sleep(0.1);
             }
 
             let sheetInfo = await props.doc.findMostRecentSheet();
 
             if (!sheetInfo)
             {
-                toast.dismiss(initNoti);
+                const prop = toastProp;
                 prop.autoClose = 3000;
                 toast.error(text.failedToOpen, toastProp);
                 return;
             }
+            const cachedData = props.doc.getCachedList();
+            let initNoti = null;
+            if (!cachedData.has(sheetInfo.header.id.toString()) ||
+                !cachedData.has(sheetInfo.header.name.toString()) ||
+                (sheetInfo.header.print &&
+                 !(sheetInfo.header.print in cachedData) ))
+            {
+                console.log("Data should be loaded");
+                const prop = toastProp;
+                prop.autoClose = false;
+                initNoti = toast.info(text.loading, prop);
+            }
+
+
             console.log(sheetInfo.date);
-            const idList = sheetInfo.idList
+            const idIdx = sheetInfo.header.id;
+            const idList = await props.doc.readList(idIdx);
             const nameIdx = sheetInfo.header.name;
             const nameList = await props.doc.readList(nameIdx);
             const list = [];
@@ -67,10 +76,13 @@ function Print(props) {
                 setPrintList([]);
             }
             console.log("Sheet read " + list.length);
-            prop.type = toast.TYPE.SUCCESS;
-            prop.autoClose = 3000;
-            prop.render = text.succeededToOpen;
-            toast.update(initNoti, prop);
+            if (initNoti) {
+                const prop = toastProp;
+                prop.type = toast.TYPE.SUCCESS;
+                prop.autoClose = 3000;
+                prop.render = text.succeededToOpen;
+                toast.update(initNoti, prop);
+            }
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -53,7 +53,8 @@ class Doc {
     constructor() {
         console.log("Create Doc class");
         const doc = new GoogleSpreadsheet(spreadsheetID[sheetKey]);
-        this.state = {doc: doc, initialized: false, sheet: null, header: null, idList: null};
+        const sheetInfo = {sheet: null, date: null, header: null, cachedList: {}};
+        this.state = {doc: doc, initialized: false, sheetInfo: sheetInfo};
     }
 
     async openDoc() {
@@ -69,41 +70,54 @@ class Doc {
         return this.state.initialized;
     }
 
-    async sheetsByTitle(arg) {
-        this.state.sheet = await this.state.doc.sheetsByTitle[arg];
+    getCachedList() {
+        return new Set(Object.keys(this.state.sheetInfo.cachedList));
+    }
 
-        return this.state.sheet;
+    async sheetsByTitle(arg) {
+        this.state.sheetInfo.sheet = await this.state.doc.sheetsByTitle[arg];
+        this.state.sheetInfo.date = arg;
+
+        return this.state.sheetInfo;
     }
 
     async sheetsByDate(date) {
-        this.state.sheet = null;
-        let dateStr = null;
         for (let option of dateFormatOptions) {
-            this.state.sheet = await this.state.doc.sheetsByTitle[date.toLocaleDateString("en-US", option)];
-            dateStr = date.toLocaleDateString("en-US", option);
-            if (this.state.sheet) {
+            const str = date.toLocaleDateString("en-US", option);
+            if (this.state.sheetInfo.date && str === this.state.sheetInfo.date)
+            {
+                console.log("Found " + str);
+                console.log(this.state.sheetInfo);
+                return this.state.sheetInfo;
+            }
+        }
+        let found = false;
+        for (let option of dateFormatOptions) {
+            const dateStr = date.toLocaleDateString("en-US", option);
+            const sheet = await this.state.doc.sheetsByTitle[dateStr];
+            if (sheet) {
+                this.state.sheetInfo.date = dateStr;
+                this.state.sheetInfo.sheet = sheet;
+                found = true;
                 break;
             }
         }
-        if (!this.state.sheet)
+        if (!found)
             return null;
 
-        console.log(dateStr);
-        console.log("Found sheet " + this.state.sheet);
+        console.log("Found sheet " + this.state.sheetInfo.sheet);
 
         // Find spreadsheet headers
-        await this.state.sheet.loadCells('A1:Z1');
-        const header = this.createHeader(this.state.sheet);
+        await this.state.sheetInfo.sheet.loadCells('A1:Z1');
+        const header = this.createHeader(this.state.sheetInfo.sheet);
         console.log(header);
-        const idList = await this.readList(header.id, this.state.sheet);
 
-        this.state.header = header;
-        this.state.idList = idList;
+        this.state.sheetInfo.header = header;
 
-        return {sheet: this.state.sheet, date: dateStr, header: header, idList: idList};
+        return this.state.sheetInfo;
     }
 
-    createHeader(tS = this.state.sheet)
+    createHeader(tS = this.state.sheetInfo.sheet)
     {
         let idIdx = null;
         let nameIdx = null;
@@ -127,8 +141,11 @@ class Doc {
         return {id:idIdx, name:nameIdx, class:classIdx, checkIn:checkInIdx, checkOut:checkOutIdx, print:printIdx};
     }
 
-    async readList(idIdx, tS = this.state.sheet)
+    async readList(idIdx, tS = this.state.sheetInfo.sheet)
     {
+        if (idIdx in this.state.sheetInfo.cachedList)
+            return this.state.sheetInfo.cachedList[idIdx];
+
         let rowIdx = 0;
         const ROW_RANGE = 100;
         let ids = [];
@@ -142,8 +159,8 @@ class Doc {
             const increment = Math.min(rowSize - rowIdx, ROW_RANGE);
             const query = String.fromCharCode(ASCII_A+idIdx) + (rowIdx+1) + ":" +
                           String.fromCharCode(ASCII_A+idIdx) + (rowIdx+increment);
+            console.log(toString(idIdx) + " " + query);
             await tS.loadCells(query);
-            console.log(query);
 
             let nullCount = 0;
             for (let i = 0 ; i < ROW_RANGE ; i++)
@@ -168,23 +185,25 @@ class Doc {
         ids[0] = "";
         ids = ids.slice(0, lastIdx+1);
 
+        this.state.sheetInfo.cachedList[idIdx] = ids;
+
         return ids;
     }
 
     async getStudent(id) {
-        const todaySheet = this.state.sheet;
+        const todaySheet = this.state.sheetInfo.sheet;
         if (!todaySheet)
             return null;
 
         // Locate student in the spreadsheet today
         let studentNumber = id;
-        let studentRowNumber = this.findStudentRow(studentNumber);
+        let studentRowNumber = await this.findStudentRow(studentNumber);
 
         if (!studentRowNumber) {
             return null;
         }
 
-        const header = this.state.header;
+        const header = this.state.sheetInfo.header;
         // Student ID is found
         console.log("Student ID: " + studentNumber + " Index:" + studentRowNumber);
         const query = String.fromCharCode(ASCII_A) + (studentRowNumber) + ":" +
@@ -202,14 +221,14 @@ class Doc {
 
     async updateCell()
     {
-        const todaySheet = this.state.sheet;
+        const todaySheet = this.state.sheetInfo.sheet;
         if (!todaySheet)
             return null;
         await todaySheet.saveUpdatedCells();
     }
 
-    findStudentRow(ID) {
-        const idList = this.state.idList;
+    async findStudentRow(ID) {
+        const idList = await this.readList(this.state.sheetInfo.header.id);
         console.log("finding student row " + idList.length);
         for (let i = 0 ; i < idList.length ; i++)
         {
@@ -221,11 +240,11 @@ class Doc {
     async findMostRecentSheet() {
         let sheetDate = new Date();
         let today = new Date();
-        while (dateDiffInDays(today, sheetDate) < 400)
+        while (dateDiffInDays(today, sheetDate) < 40)
         {
-            const sheet = await this.sheetsByDate(sheetDate);
-            if (sheet)
-                return sheet;
+            const sheetInfo = await this.sheetsByDate(sheetDate);
+            if (sheetInfo)
+                return sheetInfo;
             sheetDate.setDate(sheetDate.getDate() - 1);
         }
         return null;

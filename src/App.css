@@ -3,10 +3,6 @@
     text-align: center !important;
     width: 100%;
 }
-/*
-@media print {
-    display: block;
-} */
 
 @media screen {
     .toPrint {
@@ -45,39 +41,58 @@ hr {
 }
 
 #nav {
-    width: max(30%, 250px);
+    width: max(30%, 400px);
     margin-left: 1rem;
     margin-right: auto;
     font-size: 120%;
     border-style: hidden;
-    border-spacing: 10px 0px;
-    padding-top: 10px;
+    border-spacing: 0px;
+    padding-top: 5px;
+    border: hidden;
 }
 
 #nav_item {
-    background-color:#e0e0e0;
-    width: 100px;
-    margin-left: 1rem;
+    width: min(40%, 200px);
+    margin-left: auto;
     margin-right: auto;
     font-size: 120%;
+    border: hidden;
+    padding: 5px;
+    font-weight: bold;
+    overflow: hidden;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left:1rem;
+    padding-right:1rem;
+}
+#nav_button {
+    background-color:#e0e0e0;
+    width: min(100%, 200px);
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 80%;
     border-style: hidden;
     border-radius: 10px;
     padding: 5px;
     font-weight: bold;
 }
-a:link {
+a:link a:visited a:hover a:active {
     text-decoration: none;
     color: black;
 }
-a:visited {
+#nav_button:hover {
     text-decoration: none;
-    color: black;
+    background-color: #80a0e0;
+    color: white;
 }
-a:hover {
-    text-decoration: none;
-    color: black;
-}
-a:active {
-    text-decoration: none;
-    color: black;
+
+@media only screen and (max-width: 900px) {
+    #nav {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    }
+    #nav_item {
+        width: 50%;
+    }
 }

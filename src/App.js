@@ -21,14 +21,16 @@ function App() {
         <Router>
             <div>
                 <nav id="nav">
-                    <tr id="nav">
+                    <table id="nav"><tbody>
+                    <tr>
                         <td id="nav_item">
-                            <Link to="/">Scan</Link>
+                            <Link to="/"><button id="nav_button">Scan</button></Link>
                         </td>
                         <td id="nav_item">
-                            <Link to="/print">Print</Link>
+                            <Link to="/print"><button id="nav_button">Print</button></Link>
                         </td>
                     </tr>
+                    </tbody></table>
                 </nav>
             </div>
 
@@ -54,7 +56,7 @@ function App() {
                     icon={false}
                 />
                 <h2>
-                    v 1.8.1
+                    v 1.8.2
                 </h2>
             </div>
         </Router>

@@ -28,16 +28,13 @@ function Scan(props) {
     const [currentTimeSec, setCurrentTimeSec] = useState("");
 
     useEffect(function() {
-        console.log("Update today data " + todayDate);
+        console.log("Update today date " + todayDate);
     }, [todayDate]);
 
     useEffect(function () {
         async function initialize() {
             toast.dismiss();
             console.log("Wait for sheet");
-            const prop = toastProp;
-            prop["autoClose"] = false;
-            const initNoti = toast.info(text.loading, toastProp);
             while (!props.doc.isOpen()) {
                 console.log("check");
                 await sleep(1.0);
@@ -47,7 +44,7 @@ function Scan(props) {
             const result = await props.doc.sheetsByDate(tD);
             if (!result)
             {
-                toast.dismiss(initNoti);
+                const prop = toastProp;
                 prop.autoClose = 3000;
                 prop.type = toast.TYPE.WARNING;
                 toast.warning(
@@ -56,16 +53,29 @@ function Scan(props) {
                 toast.error(text.noSheet, toastProp);
                 return;
             }
+            let initNoti = null;
+            const cachedData = props.doc.getCachedList();
+            if (!cachedData.has(result.header.id.toString()))
+            {
+                const prop = toastProp;
+                prop.autoClose = false;
+                initNoti = toast.info(text.loading, toastProp);
+            }
             const tS = result.sheet;
             const date = result.date;
+            await props.doc.readList(result.header.id);
             console.log("tS");
             console.log(tS.title);
             setTodayDate(date);
 
-            prop.type = toast.TYPE.SUCCESS;
-            prop.autoClose = 3000;
-            prop.render = text.loaded;
-            toast.update(initNoti, prop);
+            if (initNoti)
+            {
+                const prop = toastProp;
+                prop.type = toast.TYPE.SUCCESS;
+                prop.autoClose = 3000;
+                prop.render = text.loaded;
+                toast.update(initNoti, prop);
+            }
         }
         initialize();
 
