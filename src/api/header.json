@@ -6,5 +6,6 @@
     "checkIn": ["Check in"],
     "checkOut": ["Check out"],
     "absence": ["Absence", "결석 배정"],
-    "total": ["Total"]
+    "total": ["Total"],
+    "print": ["Print", "print"]
 }

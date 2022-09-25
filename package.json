@@ -1,7 +1,7 @@
 {
   "name": "checkinout",
   "homepage": "https://techsvks.github.io/checkin/",
-  "version": "0.1.0",
+  "version": "1.8.2",
   "private": true,
   "dependencies": {
     "@material-ui/core": "^4.12.3",

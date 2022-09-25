@@ -2,66 +2,19 @@ import React, { useEffect, useRef, useState } from "react";
 import "./Scan.css"
 import QRCode from "react-qr-code";
 import { toast } from "react-toastify";
-import config from "../api/config";
-import { spreadsheetID } from "../api/spreadsheetID";
 import Logo from "../images/Logo.png";
 import { useDebounce } from "use-debounce";
 import { useReactToPrint } from "react-to-print";
 import { ToPrint } from "../components/ToPrint";
+import { sleep, toastProp } from "../Util";
 import text from "../api/text";
-
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-let sheetKey;
-if (process.env.NODE_ENV === "development")
-{
-    console.log("Development mode");
-    sheetKey = "development";
-}
-else
-{
-    console.log("Production mode");
-    sheetKey = "production";
-}
-const doc = new GoogleSpreadsheet(spreadsheetID[sheetKey]);
-
-
-const toastProp = {
-    position: "bottom-center",
-    autoClose: 3000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-};
-
-const _MS_PER_DAY = 1000 * 60 * 60 * 24;
-function dateDiffInDays(a, b) {
-    // https://stackoverflow.com/questions/3224834/get-difference-between-2-dates-in-javascript
-    // Discard the time and time-zone information.
-    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-
-    return Math.abs(Math.floor((utc2 - utc1) / _MS_PER_DAY));
-}
-
-const dateFormatOptions = [
-    { year: "numeric", month: "numeric", day: "numeric" },
-    { year: "2-digit", month: "numeric", day: "numeric" },
-    { year: "numeric", month: "2-digit", day: "numeric" },
-    { year: "2-digit", month: "2-digit", day: "numeric" },
-    { year: "numeric", month: "numeric", day: "2-digit" },
-    { year: "2-digit", month: "numeric", day: "2-digit" },
-    { year: "numeric", month: "2-digit", day: "2-digit" },
-    { year: "2-digit", month: "2-digit", day: "2-digit" },
-];
 
 const selectedIds = new Set();
 
 function Print(props) {
-    const [todayRows, setTodayRows] = useState({});
-    const [QRValue, setQRValue] = useState("");
     const [inputText, setInputText] = useState("");
+    const [studentList, setStudentList] = useState([]);
+    const [printList, setPrintList] = useState([]);
     const [searchQuery] = useDebounce(inputText, 50);
     const [searchResults, setSearchResults] = useState([]);
     const [selectedCodes, setSelectedCodes] = useState([]);
@@ -71,50 +24,68 @@ function Print(props) {
         content: () => printRef.current,
     });
 
-    function findMostRecentSheetDate() {
-        let sheetDate = new Date();
-        let today = new Date();
-        let sheetDateString = null;
-        while (!sheetDateString) {
-            for (let option of dateFormatOptions) {
-                if (
-                    doc.sheetsByTitle[
-                        sheetDate.toLocaleDateString("en-US", option)
-                    ]
-                ) {
-                    sheetDateString = sheetDate.toLocaleDateString(
-                        "en-US",
-                        option
-                    );
-                    break;
-                }
-            }
-            sheetDate.setDate(sheetDate.getDate() - 1);
-            if (dateDiffInDays(today, sheetDate) > 400) break;
-        }
-        return sheetDateString;
-    }
-
     useEffect(function () {
         async function initialize() {
-            await doc.useServiceAccountAuth(config);
-            await doc.loadInfo(); // loads document properties and worksheets
+            toast.dismiss();
+            while (!props.doc.isOpen()) {
+                await sleep(0.1);
+            }
 
-            // find today sheet
-            let sheetDate = findMostRecentSheetDate();
+            let sheetInfo = await props.doc.findMostRecentSheet();
 
-            if (!doc.sheetsByTitle[sheetDate]) {
+            if (!sheetInfo)
+            {
+                const prop = toastProp;
+                prop.autoClose = 3000;
                 toast.error(text.failedToOpen, toastProp);
-            } else {
-                let ts = doc.sheetsByTitle[sheetDate];
-                const rows = await ts.getRows();
-                setTodayRows(rows);
+                return;
+            }
+            const cachedData = props.doc.getCachedList();
+            let initNoti = null;
+            if (!cachedData.has(sheetInfo.header.id.toString()) ||
+                !cachedData.has(sheetInfo.header.name.toString()) ||
+                (sheetInfo.header.print &&
+                 !(sheetInfo.header.print in cachedData) ))
+            {
+                console.log("Data should be loaded");
+                const prop = toastProp;
+                prop.autoClose = false;
+                initNoti = toast.info(text.loading, prop);
+            }
 
-                toast.success(text.succeededToOpen, toastProp);
-                console.log("Sheet read " + rows.length);
+
+            console.log(sheetInfo.date);
+            const idIdx = sheetInfo.header.id;
+            const idList = await props.doc.readList(idIdx);
+            const nameIdx = sheetInfo.header.name;
+            const nameList = await props.doc.readList(nameIdx);
+            const list = [];
+            for (let i = 0 ; i < Math.min(idList.length, nameList.length); i++)
+            {
+               list.push({id: idList[i],  name: nameList[i]});
+            }
+            setStudentList(list);
+
+            const printIdx = sheetInfo.header.print;
+            if (printIdx)
+            {
+                setPrintList(await props.doc.readList(printIdx));
+            }
+            else
+            {
+                setPrintList([]);
+            }
+            console.log("Sheet read " + list.length);
+            if (initNoti) {
+                const prop = toastProp;
+                prop.type = toast.TYPE.SUCCESS;
+                prop.autoClose = 3000;
+                prop.render = text.succeededToOpen;
+                toast.update(initNoti, prop);
             }
         }
         initialize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(
@@ -122,19 +93,19 @@ function Print(props) {
             async function findStudents(text) {
                 let results = [];
 
-                for (const row of todayRows) {
+                for (const row of studentList) {
                     if (results.length > 4) break;
-                    if (
-                        (row["ID"] + "").includes(text) ||
-                        row["이름"]?.includes(text)
-                    ) {
-                        let resultString = `${row["이름"]}:  ${row["ID"]}`;
+                    if ((row.id && row.id.toString().includes(text)) ||
+                        (row.name && row.name.toString().includes(text)))
+                    {
+                        let resultString = `${row.name}:  ${row.id}`;
                         let resultObject = {
                             text: resultString,
-                            name: row["이름"],
-                            id: row["ID"],
+                            name: row.name,
+                            id: row.id.toString(),
                         };
                         results.push(resultObject);
+                        selectedIds.add(row.id);
                     }
                 }
                 return results;
@@ -142,34 +113,32 @@ function Print(props) {
             async function query() {
                 if (searchQuery) {
                     let sr = await findStudents(searchQuery);
-                    if (sr.length === 1) {
-                        setQRValue(sr[0]);
-                    }
                     if (sr.length > 0) setSearchResults(sr);
                 } else {
-                    setQRValue({});
                     setSearchResults([]);
                 }
             }
             query();
         },
-        [searchQuery, todayRows]
+        [searchQuery, studentList]
     );
-
 
     async function addMarkedStudents() {
         let results = [];
 
-        for (const row of todayRows) {
-            if (row["Print"]?.toLowerCase() === "x" && !selectedIds.has(row["ID"])) {
-                let resultString = `${row["이름"]}:  ${row["ID"]}`;
+        for (let i = 0 ; i < printList.length ; i++)
+        {
+            if (printList[i] && printList[i].toLowerCase() === "x" && studentList[i].id != null)
+            {
+                const entry = studentList[i];
+                let resultString = `${entry.name}:  ${entry.id}`;
                 let resultObject = {
                     text: resultString,
-                    name: row["이름"],
-                    id: row["ID"],
+                    name: entry.name,
+                    id: entry.id.toString()
                 };
                 results.push(resultObject);
-                selectedIds.add(row["ID"]);
+                selectedIds.add(entry.id);
             }
         }
         setSelectedCodes([...selectedCodes, ...results]);
@@ -178,13 +147,8 @@ function Print(props) {
     return (
         <div id="print">
             <div id="title">
-                <img id="logo"
-                    src={Logo}
-                    alt="logo"
-                ></img>
-                <h1>
-                    Print QR Codes
-                </h1>
+                <img id="logo" src={Logo} alt="SVKS" ></img>
+                <h1> Print QR Codes </h1>
             </div>
             <div id="printContents" >
                 <input id="search"
@@ -192,31 +156,18 @@ function Print(props) {
                     value={inputText}
                     onChange={(event) => {
                         setInputText(event.target.value);
-                    }}
-                ></input>
+                    }} />
 
                 {searchResults.map((result) => {
                     return (
                         <div key={result.id} id="searchResult"
                             onClick={function () {
-                                // setQRValue(result.id);
-                                // setInputText(result.name);
-                                // function () {
-
                                 if (!selectedIds.has(result.id)) {
-                                setSelectedCodes([...selectedCodes, result]);
-                                selectedIds.add(result.id);
-            }
-                                // console.log(QRValue);
-                                // }
-                            }}
-                        >
-                            <h4>
-                                {result.text}
-                            </h4>
-                            {QRValue.id && (
-                                <QRCode size={50} value={QRValue.id} />
-                            )}
+                                    setSelectedCodes([...selectedCodes, result]);
+                                    selectedIds.add(result.id);
+                                }
+                            }}>
+                            <h4> {result.text} </h4>
                         </div>
                     );
                 })}

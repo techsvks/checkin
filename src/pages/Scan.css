@@ -8,7 +8,10 @@ background-color: white;
 
 #scan {
     background-color: #ffffff;
-    padding: 1rem;
+    padding: 0px;
+    border: hidden;
+    margin-top: 0px;
+    padding-top: 0px;
 }
 
 #title {
@@ -16,8 +19,11 @@ background-color: white;
     display: flex;
     justify-content: center;
     flex-direction: row;
-    margin-top: 1rem;
+    margin-top: 0px;
     margin-bottom: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    border: hidden;
 }
 
 #logo {
@@ -38,9 +44,11 @@ background-color: white;
 #contents {
     overflow: hidden;
     height: auto;
-    width: 100%;
+    width: 100% - 2rem;
     padding: 0;
     margin: 0;
+    margin-left: 1rem;
+    margin-right: 1rem;
 }
 
 #reader {
@@ -48,17 +56,18 @@ background-color: white;
     text-align: center;
     margin: 0;
     width: 50%;
-    padding: 1rem;
+    padding: 0;
     float: left;
 }
 
 #recent {
     background-color: #ffffff;
     text-align: center;
-    margin: 0;
+    margin: 0px;
     width: 50%;
     float: left;
-    padding: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
 }
 
 #print {
@@ -98,6 +107,16 @@ background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+#searchResult:hover {
+    background-color: #80a0c0;
+    color: white;
+}
+
+#searchResult:active {
+    background-color: #4080e0;
+    color: white;
 }
 
 #selected {
@@ -149,34 +168,52 @@ background-color: white;
     font-size: 1.0rem;
     margin-bottom: 1rem;
     margin-top: 1rem;
-    border: 2px solid lightgray;
-    border-radius: 1rem;
+    border-radius: 10px;
     padding: 0.5rem;
     box-sizing: border-box;
     width: min(30rem, 80%);
 }
 
 table {
-    width: 500px;
+    width: min(100%, 500px);
     margin-left: auto;
     margin-right: auto;
 }
 
 th {
+    width:33%;
     font-size: 100%;
     color: white;
     background-color: #404040;
 }
 
 tr {
+    width:100%;
     font-size: 120%;
     background-color: #ffffff;
     text-align: center;
+    border: solid 5px;
 }
 
 tr:nth-child(even) {
     background-color: #cfcfcf;
     text-align: center;
+}
+
+td {
+    width:33.3%;
+}
+
+#name {
+    width:25%;
+}
+
+#action {
+    width:37.5%;
+}
+
+#time {
+    width:37.5%;
 }
 
 .menu tr:hover {
@@ -186,11 +223,25 @@ tr:nth-child(even) {
 }
 
 @media only screen and (max-width: 900px) {
+    h2 {
+    margin-top: 0.5rem;
+    margin-bottom: 0px;
+    }
+    #title {
+        margin-bottom: 0.5rem;
+    }
     #reader {
         width: 100%;
     }
     #recent {
         width: 100%;
+        padding-top: 0rem;
+        margin-top: 0rem;
+        padding-bottom: 0rem;
+    }
+    #clock {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
     }
 }
 

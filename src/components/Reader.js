@@ -29,10 +29,18 @@ function Reader(props) {
     );
 
     useEffect(function () {
+        let isMounted = true;
         const inter = setInterval(() => {
+            if (!isMounted)
+            {
+                console.log("Unmounted reader call");
+                return;
+            }
             requestAnimationFrame(tick);
         }, 200);
         return () => {
+            console.log("Clear interval for reader");
+            isMounted = false;
             clearInterval(inter);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +65,7 @@ function Reader(props) {
     function tick() {
         if (props.periodic()) shutter();
         if (--delayCount > 0) return;
-        if (video.current.readyState === video.current.HAVE_ENOUGH_DATA) {
+        if (video && video.current && video.current.readyState === video.current.HAVE_ENOUGH_DATA) {
             canvasRef.current.height = video.current.videoHeight;
             canvasRef.current.width = video.current.videoWidth;
 
@@ -83,9 +91,9 @@ function Reader(props) {
                 console.log(code.data);
                 setResult({ data: code.data, time: new Date() });
                 delayCount = PAUSE_COUNT;
-            } 
+            }
             return;
-        } 
+        }
     }
 
     return (
