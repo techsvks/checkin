@@ -39,7 +39,7 @@ function Manual(props) {
             {
                 const prop = toastProp;
                 prop.autoClose = 3000;
-                toast.error(text.failedToOpen, toastProp);
+                toast.error(text.failedToOpen, prop);
                 return;
             }
             const cachedData = props.doc.getCachedList();
@@ -106,8 +106,17 @@ function Manual(props) {
             async function query() {
                 if (searchQuery) {
                     let sr = await findStudents(searchQuery);
-                    if (sr.length > 0) setSearchResults(sr);
+                    if (sr.length > 0)
+                    {
+                        setSearchResults(sr);
+                    }
+                    else
+                    {
+                        console.log("No matching student");
+                        setSearchResults([]);
+                    }
                 } else {
+                    console.log("No matching student");
                     setSearchResults([]);
                 }
             }
@@ -185,31 +194,24 @@ function Manual(props) {
                 cOutDisabled = true;
             }
         }
-//                    <Dropdown.Item id="searchResult" onSelect={() => {checkIn(result.idx); }}>{cIn}</Dropdown.Item>
-/*
-        return (<Dropdown title={result.text} key={result.idx} id="searchResult">
-                    <Dropdown.Item id="checkInOut" onSelect={() => {checkIn(result.idx); }} disabled={true}>{cIn}</Dropdown.Item>
-                    <Dropdown.Item id="checkInOut" onSelect={() => {checkOut(result.idx); }}>{cOut}</Dropdown.Item>
-                </Dropdown>);
-*/
-        return (<div><button type="button" key={result.id} id="searchResult" onClick={async () => {await selectId(result.id);}}> {result.text} </button>
+        return (<div key={result.id}><button type="button" id="searchResult" onClick={async () => {await selectId(result.id);}}> {result.text} </button>
                     <div hidden={hidden}>
-                        <button type="button" key="checkIn" id="checkInOut" disabled={cInDisabled} onClick={() => {checkIn(result.id)}}> {cIn} </button>
-                        <button type="button" key="checkOut" id="checkInOut" disabled={cOutDisabled} onClick={() => {checkOut(result.id)}}> {cOut} </button>
+                        <button type="button" id="checkInOut" disabled={cInDisabled} onClick={() => {checkIn(result.id)}}> {cIn} </button>
+                        <button type="button" id="checkInOut" disabled={cOutDisabled} onClick={() => {checkOut(result.id)}}> {cOut} </button>
                     </div>
                 </div>);
     }
 
     return (
         <div id="manual">
-            <div key="title" id="title">
+            <div id="title">
                 <img id="logo" src={Logo} alt="SVKS" ></img>
                 <h1> Manual Check In/Out </h1>
             </div>
             <div id="clock">
             {todayDate} {currentTimeSec}
             </div>
-            <div id="printContents" >
+            <div id="manualInput" >
                 <input id="search"
                     placeholder={"Search for student or enter a number..."}
                     value={inputText}
@@ -217,9 +219,11 @@ function Manual(props) {
                         setInputText(event.target.value);
                     }} />
 
-                {   searchResults.map((result) => {
-                    return showEntries(result);
-                })}
+                {
+                    searchResults.map((result) => {
+                        return showEntries(result);
+                    })
+                }
             </div>
         </div>
     );

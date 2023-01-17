@@ -1,3 +1,5 @@
+export const CODE_PER_PAGE = 24;
+
 export const sleep = (time) => {
    return new Promise((resolve) => setTimeout(resolve, Math.ceil(time * 1000)));
 };
@@ -20,7 +22,7 @@ String.prototype.format = function() {
 export const toastProp = {
     position: "top-center",
     autoClose: 3000,
-    hideProgressBar: false,
+    hideProgressBar: true,
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,

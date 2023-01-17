@@ -6,10 +6,8 @@ import Logo from "../images/Logo.png";
 import { useDebounce } from "use-debounce";
 import { useReactToPrint } from "react-to-print";
 import { ToPrint } from "../components/ToPrint";
-import { sleep, toastProp } from "../Util";
+import { sleep, toastProp, CODE_PER_PAGE } from "../Util";
 import text from "../api/text";
-
-const selectedIds = new Set();
 
 function Print(props) {
     const [inputText, setInputText] = useState("");
@@ -18,6 +16,10 @@ function Print(props) {
     const [searchQuery] = useDebounce(inputText, 50);
     const [searchResults, setSearchResults] = useState([]);
     const [selectedCodes, setSelectedCodes] = useState([]);
+    const [displayedCodes, setDisplayedCodes] = useState([]);
+    const [showMarked, setShowMarked] = useState(false);
+    const [showSearched, setShowSearched] = useState(false);
+    const [pageNum, setPageNum] = useState(0);
 
     const printRef = useRef();
     const handlePrint = useReactToPrint({
@@ -37,7 +39,7 @@ function Print(props) {
             {
                 const prop = toastProp;
                 prop.autoClose = 3000;
-                toast.error(text.failedToOpen, toastProp);
+                toast.error(text.failedToOpen, prop);
                 return;
             }
             const cachedData = props.doc.getCachedList();
@@ -52,7 +54,6 @@ function Print(props) {
                 prop.autoClose = false;
                 initNoti = toast.info(text.loading, prop);
             }
-
 
             console.log(sheetInfo.date);
             const idIdx = sheetInfo.header.id;
@@ -71,16 +72,13 @@ function Print(props) {
             {
                 setPrintList(await props.doc.readList(printIdx));
             }
-            else
-            {
-                setPrintList([]);
-            }
+
             console.log("Sheet read " + list.length);
             if (initNoti) {
                 const prop = toastProp;
                 prop.type = toast.TYPE.SUCCESS;
-                prop.autoClose = 3000;
                 prop.render = text.succeededToOpen;
+                prop.autoClose = 3000;
                 toast.update(initNoti, prop);
             }
         }
@@ -105,7 +103,6 @@ function Print(props) {
                             id: row.id.toString(),
                         };
                         results.push(resultObject);
-                        selectedIds.add(row.id);
                     }
                 }
                 return results;
@@ -123,6 +120,41 @@ function Print(props) {
         [searchQuery, studentList]
     );
 
+    useEffect(
+        () => {
+            setShowMarked(printList.length > 0);
+        }, [printList]
+    );
+    useEffect(
+        () => {
+            setShowSearched(searchResults.length > 0)
+        }, [searchResults]
+    );
+    useEffect(
+        () => {
+            const length = selectedCodes.length;
+            if (length > CODE_PER_PAGE)
+            {
+                const startIdx = pageNum * CODE_PER_PAGE;
+                let count;
+                if (startIdx + CODE_PER_PAGE <= length)
+                {
+                    count = CODE_PER_PAGE;
+                }
+                else
+                {
+                    count = length - startIdx;
+                }
+                setDisplayedCodes(selectedCodes.slice(startIdx,startIdx+count));
+            }
+            else
+            {
+                setDisplayedCodes(selectedCodes);
+                setPageNum(0);
+            }
+        }, [selectedCodes, pageNum]
+    );
+
     async function addMarkedStudents() {
         let results = [];
 
@@ -138,10 +170,70 @@ function Print(props) {
                     id: entry.id.toString()
                 };
                 results.push(resultObject);
-                selectedIds.add(entry.id);
             }
         }
         setSelectedCodes([...selectedCodes, ...results]);
+    }
+
+    function addSelected() {
+        let results = [];
+        for (let i = 0 ; i < searchResults.length ; i++)
+        {
+            let result = searchResults[i];
+            let add = true;
+            selectedCodes.map((code) => {
+                if (code.id === result.id)
+                {
+                    add = false;
+                }
+                return ""
+            });
+            if (add)
+            {
+                results.push(result);
+            }
+        }
+        setSelectedCodes([...selectedCodes, ...results]);
+    }
+
+    function addAll() {
+        let results = [];
+        setSelectedCodes([]);
+        let ids = new Set();
+        for (const row of studentList) {
+            if (row.id == null || row.id.length === 0 || row.name == null || ids.has(row.id))
+            {
+                continue;
+            }
+            console.log(row)
+            let resultString = `${row.name}:  ${row.id}`;
+            let resultObject = {
+                text: resultString,
+                name: row.name,
+                id: row.id.toString(),
+            };
+            results.push(resultObject);
+            ids.add(row.id);
+        }
+        setSelectedCodes(results);
+    }
+
+    function removeAll() {
+        setSelectedCodes([]);
+    }
+
+    function movePrev() {
+        if (pageNum > 0)
+        {
+            setPageNum(pageNum - 1);
+        }
+    }
+
+    function moveNext() {
+        if (selectedCodes.length > (pageNum + 1) * CODE_PER_PAGE)
+        {
+            setPageNum(pageNum + 1);
+        }
     }
 
     return (
@@ -162,9 +254,17 @@ function Print(props) {
                     return (
                         <div key={result.id} id="searchResult"
                             onClick={function () {
-                                if (!selectedIds.has(result.id)) {
+                                let add = true;
+                                selectedCodes.map((code) => {
+                                    if (code.id === result.id)
+                                    {
+                                        add = false;
+                                    }
+                                    return ""
+                                });
+                                if (add)
+                                {
                                     setSelectedCodes([...selectedCodes, result]);
-                                    selectedIds.add(result.id);
                                 }
                             }}>
                             <h4> {result.text} </h4>
@@ -172,10 +272,10 @@ function Print(props) {
                     );
                 })}
             </div>
-            {selectedCodes.length > 0 && (
+            {displayedCodes.length > 0 && (
                 <>
                     <div id="selected">
-                        {selectedCodes.map((code) => (
+                        {displayedCodes.map((code) => (
                             <div key={code.id} id="selectedItem">
                                 <QRCode size={100} value={code.id} />
                                 <p id="qrName"> {code.text} </p>
@@ -186,7 +286,6 @@ function Print(props) {
                                                 (c) => parseInt(c.id) !== parseInt(code.id)
                                             )
                                         );
-                                        selectedIds.delete(code.id);
                                     }}
                                 > X </button>
                             </div>
@@ -204,13 +303,29 @@ function Print(props) {
                             ))}
                         </div>
                     </ToPrint>
-                    <button id="printButton" onClick={handlePrint}>
-                        Print codes.
-                    </button>
                 </>
             )}
-            <button id="printButton" onClick={addMarkedStudents}>
+            {selectedCodes.length > CODE_PER_PAGE && (
+                <div id="pageControl" hidden={selectedCodes.length <= CODE_PER_PAGE}>
+                    <button id="prevPage" onClick={movePrev}> &lt;&lt; </button>
+                    <p id="pageNum"> {pageNum+1} </p>
+                    <button id="nextPage" onClick={moveNext}> &gt;&gt; </button>
+                </div>
+            )}
+            <button id="printButton" hidden={displayedCodes.length === 0} onClick={handlePrint}>
+                Print codes
+            </button>
+            <button id="selectSearched" hidden={!showSearched} onClick={addSelected}>
+                Select all search results
+            </button>
+            <button id="selectAll" onClick={addAll}>
+                Select all
+            </button>
+            <button id="selectMarked" hidden={!showMarked} onClick={addMarkedStudents}>
                 Print codes for marked students.
+            </button>
+            <button id="removeAll" hidden={(!selectedCodes.length > 0)} onClick={removeAll}>
+                Remove all
             </button>
         </div>
     );

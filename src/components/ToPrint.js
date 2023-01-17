@@ -5,7 +5,7 @@ export const ToPrint = React.forwardRef((props, ref) => {
             className="toPrint"
             ref={ref}
             style={{
-                width: "max(calc(100vw - 30rem), 80%)",
+                width: "auto",
                 // position: "absolute",
                 // // top: "-100%",
                 // zIndex: "-100",
