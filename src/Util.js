@@ -1,4 +1,5 @@
-export const CODE_PER_PAGE = 24;
+export const CODE_PER_SCREEN = 24;
+export const CODE_PER_PAGE = 12;
 
 export const sleep = (time) => {
    return new Promise((resolve) => setTimeout(resolve, Math.ceil(time * 1000)));

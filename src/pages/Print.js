@@ -6,7 +6,7 @@ import Logo from "../images/Logo.png";
 import { useDebounce } from "use-debounce";
 import { useReactToPrint } from "react-to-print";
 import { ToPrint } from "../components/ToPrint";
-import { sleep, toastProp, CODE_PER_PAGE } from "../Util";
+import { sleep, toastProp, CODE_PER_PAGE, CODE_PER_SCREEN } from "../Util";
 import text from "../api/text";
 
 function Print(props) {
@@ -133,18 +133,10 @@ function Print(props) {
     useEffect(
         () => {
             const length = selectedCodes.length;
-            if (length > CODE_PER_PAGE)
+            if (length > CODE_PER_SCREEN)
             {
-                const startIdx = pageNum * CODE_PER_PAGE;
-                let count;
-                if (startIdx + CODE_PER_PAGE <= length)
-                {
-                    count = CODE_PER_PAGE;
-                }
-                else
-                {
-                    count = length - startIdx;
-                }
+                const startIdx = pageNum * CODE_PER_SCREEN;
+                const count = Math.min(CODE_PER_SCREEN, length - startIdx);
                 setDisplayedCodes(selectedCodes.slice(startIdx,startIdx+count));
             }
             else
@@ -230,10 +222,31 @@ function Print(props) {
     }
 
     function moveNext() {
-        if (selectedCodes.length > (pageNum + 1) * CODE_PER_PAGE)
+        if (selectedCodes.length > (pageNum + 1) * CODE_PER_SCREEN)
         {
             setPageNum(pageNum + 1);
         }
+    }
+
+    function printCodes() {
+        let pages = [];
+        for (let i = 0 ; i < selectedCodes.length ; i += CODE_PER_PAGE)
+        {
+            const count = Math.min(CODE_PER_PAGE, selectedCodes.length - i);
+            pages.push(selectedCodes.slice(i, i + count));
+        }
+        return pages.map((page) => (
+                    <div id="qrList">
+                        {page.map((code) => (
+                            <div key={code.id} id="qrCode" >
+                                <QRCode size={160} value={code.id} />
+                                <p id="qrName" >
+                                    {code.text}
+                                </p>
+                            </div>
+                         ))}
+                    </div>
+               ));
     }
 
     return (
@@ -292,21 +305,12 @@ function Print(props) {
                         ))}
                     </div>
                     <ToPrint ref={printRef}>
-                        <div id="qrList">
-                            {selectedCodes.map((code) => (
-                                <div key={code.id} id="qrCode" >
-                                    <QRCode size={160} value={code.id} />
-                                    <p id="qrName" >
-                                        {code.text}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+                        {printCodes()}
                     </ToPrint>
                 </>
             )}
-            {selectedCodes.length > CODE_PER_PAGE && (
-                <div id="pageControl" hidden={selectedCodes.length <= CODE_PER_PAGE}>
+            {selectedCodes.length > CODE_PER_SCREEN && (
+                <div id="pageControl" hidden={selectedCodes.length <= CODE_PER_SCREEN}>
                     <button id="prevPage" onClick={movePrev}> &lt;&lt; </button>
                     <p id="pageNum"> {pageNum+1} </p>
                     <button id="nextPage" onClick={moveNext}> &gt;&gt; </button>

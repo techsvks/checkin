@@ -7,6 +7,7 @@
 @media screen {
     .toPrint {
         display: none;
+        page-break-after: always;
     }
 }
 
