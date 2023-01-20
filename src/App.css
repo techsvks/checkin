@@ -7,6 +7,7 @@
 @media screen {
     .toPrint {
         display: none;
+        page-break-after: always;
     }
 }
 
@@ -41,9 +42,8 @@ hr {
 }
 
 #nav {
-    width: max(30%, 400px);
+    width: max(30%, 600px);
     font-size: 120%;
-    border-style: hidden;
     border-spacing: 0px;
     padding-top: 5px;
     border: hidden;
@@ -53,7 +53,7 @@ hr {
 }
 
 #nav_item {
-    width: min(40%, 300px);
+    width: 300px;
     font-size: 120%;
     border: hidden;
     font-weight: bold;
@@ -64,7 +64,7 @@ hr {
     padding-right:0px;
     border: hidden;
 }
-#nav_button {
+#nav_scan, #nav_manual, #nav_print  {
     background-color:#e0e0e0;
     width: min(100%, 300px);
     margin-left: 0px;
@@ -89,11 +89,15 @@ a:link a:visited a:hover a:active {
 
 @media only screen and (max-width:650px) {
     #nav {
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+        padding-right: 0px;
     }
     #nav_item {
         width: 50%;
+    }
+    #nav_print {
+        display: none;
     }
 }

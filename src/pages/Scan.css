@@ -7,11 +7,18 @@ background-color: white;
 }
 
 #scan {
-    background-color: #ffffff;
+    background-color: white;
     padding: 0px;
     border: hidden;
     margin-top: 0px;
     padding-top: 0px;
+}
+
+#print, #manual {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background-color: white;
 }
 
 #title {
@@ -70,15 +77,8 @@ background-color: white;
     padding-bottom: 1rem;
 }
 
-#print {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    background-color: white;
-}
-
-#printContents {
-    margin-top: 4rem;
+#printContents, #manualInput {
+    margin-top: 1rem;
     margin-bottom: 4rem;
     width: max(calc(100vw - 30rem), 80%);
     font-size: 1.5rem;
@@ -96,14 +96,13 @@ background-color: white;
 }
 
 #searchResult {
+    font-size: 1.5rem;
     width: 100%;
     margin-top: 0.5rem;
     border: 1px solid lightgray;
     border-radius: 1rem;
     padding: 0.5rem;
     box-sizing: border-box;
-    user-select: none;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,12 +110,44 @@ background-color: white;
 
 #searchResult:hover {
     background-color: #80a0c0;
-    color: white;
+    color: grey;
+}
+
+#checkInOut {
+    font-size: 1.5rem;
+    width: 90%;
+    margin-top: 0.5rem;
+    border: 1px solid lightgray;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    margin-left: auto;
+    margin-right: 0rem;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
 }
 
 #searchResult:active {
     background-color: #4080e0;
     color: white;
+}
+
+#checkInOut:hover {
+    background-color: #80a0c0;
+    color: white;
+}
+
+#checkInOut:disabled {
+    background-color: #808080;
+    color: #404040;
+}
+
+
+*:disabled {
+    background-color: #4080e0;
+    color: green;
 }
 
 #selected {
@@ -145,9 +176,15 @@ background-color: white;
 }
 
 #qrList {
-    width: 100%;
+    width: auto;
     box-sizing: border-box;
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-left: 3rem;
+    margin-right: 3rem;
+    padding-top: 3rem;
+    page-break-after: always;
 }
 
 #qrCode {
@@ -164,14 +201,38 @@ background-color: white;
     text-align: center;
 }
 
-#printButton {
+#printButton, #selectMarked, #selectSearched, #selectAll, #removeAll {
     font-size: 1.0rem;
-    margin-bottom: 1rem;
-    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
     border-radius: 10px;
     padding: 0.5rem;
     box-sizing: border-box;
     width: min(30rem, 80%);
+}
+
+#pageControl {
+    display: flex;
+}
+
+#prevPage, #nextPage {
+    display: flex;
+    font-size: 1.0rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 10px;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: 5rem;
+}
+#pageNum {
+    font-size: 1.0rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 10px;
+    padding: 0.5rem;
+    width: 5rem;
+    text-align: center;
 }
 
 table {

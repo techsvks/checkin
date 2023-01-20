@@ -22,7 +22,6 @@ function addToRecentList(value) {
     recentCount += 1;
 }
 
-
 function Scan(props) {
     const [todayDate, setTodayDate] = useState(new Date().toLocaleDateString());
     const [currentTimeSec, setCurrentTimeSec] = useState("");
